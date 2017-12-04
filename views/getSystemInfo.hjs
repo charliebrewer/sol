@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Get System Info</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
+  </head>
+  <body>
+    <h1>Get System Info</h1>
+    <p>Output: {{ output }}</p>
+  </body>
+  
+  <script type="application/javascript">
+  var positionArr = {{ positions }};
+  console.log(positionArr);
+  </script>
+  
+  <script src="javascripts/pixi_test.js"></script>
+</html>

@@ -8,13 +8,13 @@ module.exports = function() {
 	 */
 	 module.getAllPlayerData = function(input, output, callback) {
 		if(null == input.plrId) {
-			output.message = 'No plrId in request';
+			output.messages.push("No plrId in request");
 			callback(output);
 		} else {
 			var plrId = parseInt(input.plrId);
 
 			if(!plrId) {
-				output.message = 'Invalid plrId';
+				output.messages.push("Invalid plrId");
 				callback(output);
 			} else {
 				module.getPlayerRecord(plrId, function(playerRecord) {

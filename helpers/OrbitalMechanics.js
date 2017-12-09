@@ -13,18 +13,20 @@ module.exports = function() {
 	module.SECONDS_IN_HOUR        = 3600;
 	module.CENTER_OF_SYSTEM       = 2147483648;
 	module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
-	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
+	module.EARTH_YEAR_PERIOD      = 3600; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
 	
 	/**
 	 * Data structure for a location in space and time.
 	 */
-	module.coordinate = function(posX, posY, movX, movY, timestamp) {
-		this.pos = [posX, posY];
-		this.mov = [movX, movY];
-		this.t = timestamp;
+	module.getCrd = function(posX, posY, movX, movY, timestamp) {
+		var crd = {};
 		
-		return this;
+		crd.pos = [posX, posY];
+		crd.mov = [movX, movY];
+		crd.t = timestamp;
+		
+		return crd;
 	};
 	
 	/**
@@ -93,12 +95,13 @@ module.exports = function() {
 			}
 		}
 	}
-
+	
 	/**
 	 * Returns a new coordinate for the player after timeframe seconds given no engine power
 	 * @param position Vector array [0,0].
 	 * @param movement Vector array.
 	 * @param celestialBodies Array of objects, each object containing ["mass"=0, "pos"=[0,0]]
+	 * TODO change from seconds to ms
 	 */
 	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
 		var distanceSq = 0;
@@ -108,12 +111,10 @@ module.exports = function() {
 		for(var i = 0; i < celestialBodies.length; i++) {
 			// get distance from celestial body by subtracting positionVector from the celestialBody x and y values
 			gravitationalVector = copy(celestialBodies[i]["pos"]); // Set start of gravitational position to parent
-			
 			gravitationalVector = sub(gravitationalVector, position); // Subtract the child to get a distance vector from child to parent
-			
 			distance = mag(gravitationalVector);
 			
-			pullMag = module.getGravitationalPull(celestialBodies[i]['mass'], distance);
+			pullMag = module.getGravitationalPull(celestialBodies[i]['mass'], distance, timeframe);
 			
 			normalize(gravitationalVector);
 			mult(gravitationalVector, pullMag);
@@ -124,16 +125,16 @@ module.exports = function() {
 		
 		add(position, movement);
 		
-		return new module.coordinate(position[0], position[1], movement[0], movement[1], timestamp + timeframe);
+		return module.getCrd(position[0], position[1], movement[0], movement[1], timestamp + timeframe);
 	};
 
 	/**
 	 * Function that determines the length of the vector applied to a body given parameters.
 	 * Returns meters per second as an int
 	 */
-	module.getGravitationalPull = function(mass, distance, timeFrameMs) {
-		
-		return (timeFrameMs * 0.002) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
+	module.getGravitationalPull = function(mass, distance, timeFrameSec) {
+		// Because our gravitational constant is based on 1/60 of an Earth year, we need to adjust it based on our timeframe
+		return (timeFrameSec / (module.EARTH_YEAR_PERIOD / 60)) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
 	};
 	
 	module.getDistanceSq = function(aX, aY, bX, bY) {

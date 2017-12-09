@@ -1,4 +1,4 @@
-var PlayerController = require('./PlayerController');
+var PlayerDAO = require('../models/PlayerDAO');
 
 module.exports = function() {
 	var module = {};
@@ -10,20 +10,37 @@ module.exports = function() {
 	SHIP
 	COMMODITY
 	MODULE
+	etc
 	*/
 	
 	module.giveItemToPlayer = function(plrId, itemType, itemId, quantity, callback) {
-		var itemDelta = {};
+		var itemDelta = [];
+		itemDelta.push({"itemType" : itemType, "itemId" : itemId, "quantity" : quantity});
 		
 		switch(itemType) {
 			case module.ITEM_TYPE_NOTHING:
+				callback([]);
 				break;
+				
+			case module.ITEM_TYPE_BUCKET:
+				itemDelta = [];
+				// TODO
+				break;
+				
+			case module.ITEM_TYPE_CREDITS:
+				PlayerDAO().getPlayer(plrId, function(playerRecord) {
+					playerRecord['credits'] += quantity;
+					
+					PlayerDAO().updatePlayer(playerRecord, function() {
+						callback(itemDelta);
+					});
+				});
+				break;
+				
 			default:
 				console.log("Item type " + itemType + " not recognized");
 				break;
 		}
-		
-		callback(itemDelta);
 	};
 	
 	return module;

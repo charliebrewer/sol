@@ -6,6 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "bezier-js": "^2.2.3",
     "body-parser": "~1.18.2",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
@@ -15,6 +16,8 @@
     "morgan": "~1.9.0",
     "mysql": "^2.15.0",
     "serve-favicon": "~2.4.5",
+    "sprintf-js": "^1.1.1",
+    "sqlstring": "^2.3.0",
     "vectors": "^0.1.0"
   }
 }

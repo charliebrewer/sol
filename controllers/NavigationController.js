@@ -2,12 +2,24 @@ var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
 
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 
+var BezierJs = require('bezier-js');
+
 module.exports = function() {
 	var module = {};
 	
 	module.DESTINATION_TYPE_STATION   = 1;
-	module.DESTINATION_TYPE_ORBIT     = 2;
-	module.DESTINATION_TYPE_INTERCEPT = 3;
+	module.DESTINATION_TYPE_DRIFT     = 2;
+	module.DESTINATION_TYPE_ORBIT     = 3;
+	module.DESTINATION_TYPE_INTERCEPT = 4;
+	
+	module.LOCATION_TYPE_STATION  = 1;
+	module.LOCATION_TYPE_SHIP     = 2;
+	module.LOCATION_TYPE_SPACE    = 3;
+	module.LOCATION_TYPE_PROPERTY = 4;
+	
+	module.MIN_PLOT_WAIT_SEC = 5; // Minimum number of seconds in the future the player can start a new course
+	module.MAX_COURSE_DURATION_SEC = 10; // Maximum time allowed for a given course
+	module.COURSE_RESOLUTION_MS = 5000; // 
 	
 	/**
 	 * Method that validates a course.
@@ -37,16 +49,27 @@ module.exports = function() {
 		*/
 		// TODO remove temp input
 		input = {
-			destinationType = module.DESTINATION_TYPE_STATION,
-			destinationId   = 1, // Arbitrary station ID
-			shipId          = 1,
-			course = [
-				new OrbitalMechanics().coordinate(0, 0, 0, 0, 0),
-				new OrbitalMechanics().coordinate(0, 0, 0, 0, 0),
-				new OrbitalMechanics().coordinate(0, 0, 0, 0, 0),
-				new OrbitalMechanics().coordinate(0, 0, 0, 0, 0)
+			destinationType : module.DESTINATION_TYPE_STATION,
+			destinationId   : 1, // Arbitrary station ID
+			shipId          : 1,
+			course : [
+				// TODO need data structure for bezier lines + velocity lines + times
 			]
 		};
+		
+		// Before we retrieve any data, we check basic info about the request first
+		if(undefined == input.destinationType || undefined == input.destinationId || undefined == input.shipId || undefined == course) {
+			output.messages.push("Input invalid.");
+			callback(output);
+			return;
+		}
+		
+		var prevCrd = null;
+		input.course.forEach(function(crd) {
+			if(null != prevCrd) {}
+			
+			prevCrd = crd;
+		});
 		
 		PlayerController().getAllPlayerData(input, {}, function(playerData) {
 			
@@ -60,12 +83,87 @@ module.exports = function() {
 		callback(output);
 	};
 	
+	// TODO - remove this function from the server - if the player wishes to drift through space, they'll just
+	// plot the course with their engines off and then call plotCourse with the associated curves
+	// What about disabled engines?
 	module.plotDrift = function(input, output, callback) {
 		/*
 		update the player's ship route to drifting through space
+		
+		we need the player's starting coordinate from which to drift, that's it
+		
+		verify the time of the coordinate is not too far in the future and is not in the past
+		verify the player is not already drifting
+		verify the player is in a ship
+		verify the player owns the ship they are on
+		verify the player will be at the coordinate
+		
 		*/
-		callback(output);
+		// TODO verify input contains a coordinate
+		var startCrd = input.startCrd;
+		if(startCrd.t < input.timeMs + module.MIN_PLOT_WAIT_SEC) {
+			output.messages.push("Course starts too soon.");
+			callback(output);
+			return;
+		}
+		
+		// TODO verify the above requirements
+		CelestialBodiesDAO().getBodies(function(celestialBodies) {
+			// Get only the relevant bodies
+			// TODO implement this
+			var cBodies = [];
+			celestialBodies.forEach(function(body) {
+				if(body['celestial_body_id'] == OrbitalMechanics().SOL_ID) {
+					cBodies.push(body);
+				}
+			});
+			
+			var driftCrds = [];
+			driftCrds.push(startCrd);
+			var previousCrd = startCrd;
+			
+			while(previousCrd.t <= startCrd.t + module.MAX_COURSE_DURATION_SEC) {
+				OrbitalMechanics().populateOrbitalPositions(cBodies, (1000 * previousCrd.t) + module.COURSE_RESOLUTION_MS);
+				
+				previousCrd = OrbitalMechanics().getDriftCoordinate(
+					previousCrd.pos,
+					previousCrd.mov,
+					previousCrd.t,
+					module.COURSE_RESOLUTION_MS / 1000,
+					cBodies
+				);
+				
+				driftCrds.push(previousCrd);
+			}
+			
+			// driftCrds now contains a list of coordinates
+			output.driftCrds = driftCrds;
+			callback(output);
+		});
 	};
 	
 	return module;
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

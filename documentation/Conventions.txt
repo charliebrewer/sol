@@ -1,0 +1,55 @@
+Conventions
+
+This document should serve as a central location for intended conventions of the code base.
+
+----------------------------------------------------------------
+
+Naming Conventions
+
+Coordinates are abbreviated "crd".
+Tables in the database that hold player data and are modified at run time start with plr_.
+Tables in the database that contain definitions data and do not change start with def_.
+
+----------------------------------------------------------------
+
+In Game Request Stack
+
+While in game, the client makes calls to /runCommand. Here, the client posts a JSON object containing a single property "req" which is a string. The string is a JSON object that has been stringify-ed, and contains 2 attributes: "command" which is an integer, and "data" which is an object of whatever data is to be passed to the endpoint.
+
+The command property is used in CommandController.js to determine if the command is valid and what function to run.
+
+All Controller functions exposed in CommandController have the function signature of function(input, output, callback), and should call callback when done with the output as the only parameter.
+
+The input parameter contains arbitrary data depending on the request specifics, but will also always contain plrId and timeMs where plrId is the ID of the authenticated player making the request, and timeMs is the time at which the request was made. The time attribute should be used for any time calculations on the server instead of additional calls to Date.now().
+
+The output parameter contains 3 attributes, responseCode where 0 represents success and non-0 represents failure. It also contains messages which is an array of messages to be displayed to the client; adding messages should be done by means of output.messages.push("message"); The final property of output is "data", which represents an object to be returned to the client based on the request specifics.
+
+----------------------------------------------------------------
+
+Models
+
+When accessing data, files named whateverDAO are representative of a single table in the DB. The primary database access file PersistentDataAccess should not be used outside of these DAOs. The DAOs provide clean functions that expose pre-defined ways of retreiving data, for instance you shouldn't be able to select all player records but a single record based on an ID. All caching is done at this level.
+
+For complex data, Controllers (Models not named DAO?) should provide functions that build the required data structure.
+
+----------------------------------------------------------------
+
+Code Style
+
+Tabs. When indentation is needed for a long function declaration over multiple lines for instance, use tabs to the function, and then spaces to line up the rest.
+
+Example:
+(tab)(tab)function asdf(param1,
+(tab)(tab)(spaces......)param2,
+(tab)(tab)(spaces......)param3) {};
+
+Open brackets are on the same line as the if or function or w/e. Single statement conditionals or loops can skip brackets, if desired.
+
+
+
+
+
+
+
+
+

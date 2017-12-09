@@ -17,10 +17,10 @@ module.exports = function() {
 	 * @param output Object with response information
 	 */
 	module.runCommand = function(command, input, output, callback) {
-		//response.message = commandCodes[command];
 		if(!commandCodes[command]) {
 			// Invalid code
-			output.message = "command (" + command + ") is an invalid command code";
+			output.messages.push("command (" + command + ") is an invalid command code");
+			callback(output);
 		} else {
 			eval(commandCodes[command])(input, output, callback);
 		}

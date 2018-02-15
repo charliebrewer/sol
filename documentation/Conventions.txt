@@ -45,7 +45,11 @@ Example:
 
 Open brackets are on the same line as the if or function or w/e. Single statement conditionals or loops can skip brackets, if desired.
 
+----------------------------------------------------------------
 
+Logging
+
+Use proper punctuation when logging, including capitalizing the first letter of each sentence and ending with a period.
 
 
 

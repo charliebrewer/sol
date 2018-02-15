@@ -6,7 +6,8 @@ module.exports = function() {
 	
 	var commandCodes = {
 		000 : "TempController().runTempFunction",
-		100 : "DefinitionsController().getAllDefinitionsData",
+		100 : "DataController().getAllClientData",
+		101 : "DefinitionsController().getAllDefinitionsData",
 		110 : "PlayerController().getAllPlayerData",
 		300 : "NavigationController().plotCourse"
 	};
@@ -19,7 +20,10 @@ module.exports = function() {
 	module.runCommand = function(command, input, output, callback) {
 		if(!commandCodes[command]) {
 			// Invalid code
-			output.messages.push("command (" + command + ") is an invalid command code");
+			output.messages.push("Command (" + command + ") is an invalid command code.");
+			callback(output);
+		} else if(undefined == input.plrId || undefined == input.timeMs || undefined == input.data) {
+			output.messages.push("Input does not contain plrId, timeMs, or data.");
 			callback(output);
 		} else {
 			eval(commandCodes[command])(input, output, callback);

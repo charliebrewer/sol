@@ -1,16 +1,17 @@
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
 
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
+var NavigationMechanics = require('../helpers/NavigationMechanics');
 
-var BezierJs = require('bezier-js');
+var Bezier = require('bezier-js');
 
 module.exports = function() {
 	var module = {};
 	
-	module.DESTINATION_TYPE_STATION   = 1;
-	module.DESTINATION_TYPE_DRIFT     = 2;
-	module.DESTINATION_TYPE_ORBIT     = 3;
-	module.DESTINATION_TYPE_INTERCEPT = 4;
+	module.DESTINATION_TYPE_STATION   = 1; // ID is station ID
+	module.DESTINATION_TYPE_DRIFT     = 2; // ID is 0, not used
+	module.DESTINATION_TYPE_ORBIT     = 3; // ID is celestial_body_id
+	module.DESTINATION_TYPE_INTERCEPT = 4; // ID route ID
 	
 	module.LOCATION_TYPE_STATION  = 1;
 	module.LOCATION_TYPE_SHIP     = 2;
@@ -20,11 +21,13 @@ module.exports = function() {
 	module.MIN_PLOT_WAIT_SEC = 5; // Minimum number of seconds in the future the player can start a new course
 	module.MAX_COURSE_DURATION_SEC = 10; // Maximum time allowed for a given course
 	module.COURSE_RESOLUTION_MS = 5000; // 
+	module.MAX_SEGMENTS = 10;
 	
 	/**
 	 * Method that validates a course.
+	 * TODO change inputOrig to input
 	 */
-	module.plotCourse = function(input, output, callback) {
+	module.plotCourse = function(inputOrig, output, callback) {
 		/*
 		input is array of objects, starting coordinate, ending coordinate, bezier control vector
 		input also contains destination
@@ -49,31 +52,93 @@ module.exports = function() {
 		*/
 		// TODO remove temp input
 		input = {
+			plrId : inputOrig.plrId,
+			timeMs : inputOrig.timeMs,
 			destinationType : module.DESTINATION_TYPE_STATION,
-			destinationId   : 1, // Arbitrary station ID
+			destinationId   : 1,
 			shipId          : 1,
 			course : [
-				// TODO need data structure for bezier lines + velocity lines + times
+				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
+				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
+				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
+					12345,12350, 0.5)),
+				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
+				    NavigationMechanics().getBezierCurveQuad(5,6,3,4,7,8),
+				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
+					12350,12355, 0.5)),
+				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
+				    NavigationMechanics().getBezierCurveQuad(7,8,3,4,5,6),
+				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
+					12355,12360, 0.5))
 			]
 		};
 		
+		//console.log(JSON.stringify(input));
+		
 		// Before we retrieve any data, we check basic info about the request first
-		if(undefined == input.destinationType || undefined == input.destinationId || undefined == input.shipId || undefined == course) {
+		if(undefined == input.destinationType || undefined == input.destinationId || undefined == input.shipId || undefined == input.course) {
 			output.messages.push("Input invalid.");
 			callback(output);
 			return;
 		}
 		
-		var prevCrd = null;
-		input.course.forEach(function(crd) {
-			if(null != prevCrd) {}
+		if(input.course.length > module.MAX_SEGMENTS) {
+			output.messages.push("More segments than allowed.");
+			callback(output);
+			return;
+		}
+		
+		if(input.course[0].sT < (input.timeMs / 1000) + module.MIN_PLOT_WAIT_SEC) {
+			output.messages.push("Starts too soon.");
+			callback(output);
+			return;
+		}
+		
+		if(input.course[0].eT > (input.timeMs / 1000) + module.MIN_PLOT_WAIT_SEC + module.MAX_COURSE_DURATION_SEC) {
+			output.messages.push("Ends too late.");
+			callback(output);
+			return;
+		}
+		
+		// Check to see that each curve links to the next
+		// Note we are dealing with "simple segments"
+		var prevSeg = null;
+		var segments = [];
+		
+		input.course.forEach(function(seg) {
+			if(seg.sT > seg.eT) {
+				// TODO handle error
+				console.log("Segment has start time after its end time.");
+			}
 			
-			prevCrd = crd;
+			if(seg.f < 0 || seg.f > 1) {
+				// TODO handle error
+				console.log("Invalid fuel used.");
+			}
+			
+			if(null != prevSeg) {
+				if(prevSeg.p[2].x != seg.p[0].x || prevSeg.p[2].y != seg.p[0].y) {
+					// TODO handle error
+					console.log("Curves do not start and end at the same point.");
+				}
+				
+				if(prevSeg.eT != seg.sT) {
+					// TODO handle error
+					console.log("Curves do not start and end at the same time.");
+				}
+			}
+			
+			segments.push(NavigationMechanics().getComplexNavSeg(seg));
+			
+			prevSeg = seg;
 		});
 		
-		PlayerController().getAllPlayerData(input, {}, function(playerData) {
+		
+		/*
+		PlayerController().getAllPlayerData(input, output, function(playerData) {
 			
 		});
+		*/
 
 		callback(output);
 	};

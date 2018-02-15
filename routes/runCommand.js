@@ -38,13 +38,13 @@ router.post('/', function(req, res, next) {
 				error = false;
 				
 				// TODO populate player id, where does session validation go?
-				request.data.plrId = 0;
-				request.data.timeMs = Date.now(); // Set time once for the whole request
+				request.plrId = 0;
+				request.timeMs = Date.now(); // Set time once for the whole request
 				
 				// We set the output to success first, but it may be changed in the call
 				output.responseCode = RESPONSE_SUCCESS;
 
-				CommandController().runCommand(command, request.data, output, function(result) {
+				CommandController().runCommand(command, request, output, function(result) {
 					res.json(result);
 				});
 			}

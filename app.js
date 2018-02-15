@@ -7,6 +7,7 @@ var bodyParser = require('body-parser');
 var lessMiddleware = require('less-middleware');
 
 var index = require('./routes/index');
+var clientTest = require('./routes/clientTest');
 //var getSystemInfo = require('./routes/getSystemInfo');
 var runCommand = require('./routes/runCommand');
 var tempCommand = require('./routes/tempCommand');
@@ -28,6 +29,7 @@ app.use(lessMiddleware(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
+app.use('/clientTest', clientTest);
 //app.use('/getSystemInfo', getSystemInfo);
 app.use('/runCommand', runCommand);
 app.use('/tempCommand', tempCommand);

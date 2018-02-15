@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{ title }}</title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+	<script
+	  src="https://code.jquery.com/jquery-3.2.1.min.js"
+	  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+	  crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
+  </head>
+  <body>
+    <h1>{{ title }}</h1>
+    <p>Welcome to {{ title }}</p>
+  </body>
+  
+  <!-- <script src="javascripts/pixi_test.js"></script> -->
+  <script src="javascripts/common.js"></script>
+  <script src="javascripts/models.js"></script>
+  <script src="javascripts/viewsb.js"></script>
+  <script src="javascripts/DefinitionsData.js"></script>
+  <script src="javascripts/PlayerData.js"></script>
+  <script src="javascripts/app.js"></script>
+  <script>
+  SolGame.app.init(function() {
+	SolGame.app.start(function() {});
+  });
+  //SolGame.models.updateDefinitionsData(function() {console.log(SolGame.DefinitionsData)});
+  //console.log(SolGame);
+  //console.log(SolGame);
+  //setTimeout(function() {console.log("In timeout");SolGame.PlayerData.test = true;console.log(SolGame);}, 5000);
+  //SolGame.PlayerData.test = true;
+  //console.log(SolGame);
+  </script>
+</html>

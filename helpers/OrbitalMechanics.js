@@ -1,9 +1,4 @@
-var add = require('vectors/add')(2);
-var copy = require('vectors/copy')(2);
-var sub = require('vectors/sub')(2);
-var mult = require('vectors/mult')(2);
-var mag = require('vectors/mag')(2);
-var normalize = require('vectors/normalize')(2);
+var Victor = require('victor');
 
 module.exports = function() {
 	var module = {};
@@ -13,7 +8,7 @@ module.exports = function() {
 	module.SECONDS_IN_HOUR        = 3600;
 	module.CENTER_OF_SYSTEM       = 2147483648;
 	module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
-	module.EARTH_YEAR_PERIOD      = 3600; // In game seconds that the Earth takes to orbit the sun
+	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
 	
 	/**
@@ -22,8 +17,8 @@ module.exports = function() {
 	module.getCrd = function(posX, posY, movX, movY, timestamp) {
 		var crd = {};
 		
-		crd.pos = [posX, posY];
-		crd.mov = [movX, movY];
+		crd.pos = {x : posX, y : posY};
+		crd.mov = {x : movX, y : movY};
 		crd.t = timestamp;
 		
 		return crd;
@@ -38,10 +33,9 @@ module.exports = function() {
 		var percentYearCompleted = ((targetTimeMs / 1000) % orbitalPeriodSeconds) / orbitalPeriodSeconds;
 		var theta = ((360 * percentYearCompleted) + thetaOffsetDeg ) % 360;
 
-		var returnX = Math.round(parentPosition[0] + (Math.cos(theta * module.PI_OVER_180) * distanceFromParent));
-		var returnY = Math.round(parentPosition[1] + (Math.sin(theta * module.PI_OVER_180) * distanceFromParent));
-
-		return [returnX, returnY];
+		// TODO do we want to round the return here?
+		return {x : Math.round(parentPosition.x + (Math.cos(theta * module.PI_OVER_180) * distanceFromParent)),
+		        y : Math.round(parentPosition.y + (Math.sin(theta * module.PI_OVER_180) * distanceFromParent))};
 	};
 	
 	/**
@@ -64,7 +58,7 @@ module.exports = function() {
 		}
 
 		if(celestialBodies[i]['celestial_body_id'] == module.SOL_ID) { // TODO make 1 a constant for the sun
-			celestialBodies[i]['pos'] = [module.CENTER_OF_SYSTEM, module.CENTER_OF_SYSTEM];
+			celestialBodies[i]['pos'] = {x : module.CENTER_OF_SYSTEM, y : module.CENTER_OF_SYSTEM};
 		} else {
 			// Look for the parent
 			var found = false;
@@ -91,7 +85,7 @@ module.exports = function() {
 			if(!found) {
 				// TODO this should be an exception
 				console.log('Could not find parent ' + celestialBodies[i]['parent_body_id'] + ' for body ' + celestialBodies[i]['celestial_body_id']);
-				celestialBodies[i]['pos'] = [0,0];
+				celestialBodies[i]['pos'] = {x : 0, y : 0};
 			}
 		}
 	}
@@ -105,27 +99,30 @@ module.exports = function() {
 	 */
 	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
 		var distanceSq = 0;
-		var gravitationalVector = [0,0];
+		var gravitationalVector = new Victor(0, 0);
+		var movementVector = new Victor(movement.x, movement.y);
+		var positionVector = new Victor(position.x, position.y)
 		var pullMag = 0;
 		
 		for(var i = 0; i < celestialBodies.length; i++) {
 			// get distance from celestial body by subtracting positionVector from the celestialBody x and y values
-			gravitationalVector = copy(celestialBodies[i]["pos"]); // Set start of gravitational position to parent
-			gravitationalVector = sub(gravitationalVector, position); // Subtract the child to get a distance vector from child to parent
-			distance = mag(gravitationalVector);
+			gravitationalVector.copyX(celestialBodies[i]["pos"]); // Set start of gravitational position to parent
+			gravitationalVector.copyY(celestialBodies[i]["pos"]); // Set start of gravitational position to parent
+			gravitationalVector.subtract(positionVector); // Subtract the child to get a distance vector from child to parent
+			distance = gravitationalVector.length();
 			
 			pullMag = module.getGravitationalPull(celestialBodies[i]['mass'], distance, timeframe);
 			
-			normalize(gravitationalVector);
-			mult(gravitationalVector, pullMag);
-			mult(gravitationalVector, timeframe);
+			gravitationalVector.normalize();
+			gravitationalVector.multiply(new Victor(pullMag, pullMag));
+			gravitationalVector.multiply(new Victor(timeframe, timeframe));
 			
-			add(movement, gravitationalVector); // Adjust the movement vector according to the pull of this body
+			movementVector.add(gravitationalVector); // Adjust the movement vector according to the pull of this body
 		}
 		
-		add(position, movement);
+		positionVector.add(movementVector);
 		
-		return module.getCrd(position[0], position[1], movement[0], movement[1], timestamp + timeframe);
+		return module.getCrd(positionVector.x, positionVector.y, movementVector.x, movementVector.y, timestamp + timeframe);
 	};
 
 	/**
@@ -188,7 +185,7 @@ module.exports = function() {
 		Need to get ratio of adjustments made to distance from parent and parent mass
 		dfp = km / 2.5, should be meters: 2500 * dfp = meters
 		pm  = 1000 * earth mass, should be kg: 1000 * earth mass = X kg
-		earth mass in kg = 5.9722×10 24 kg
+		earth mass in kg = 5.9722?10 24 kg
 		5.9722 x 10 21
 		* /
 	};

@@ -1,3 +1,4 @@
+var DataController = require('./DataController');
 var DefinitionsController = require('./DefinitionsController');
 var TempController = require('./TempController');
 

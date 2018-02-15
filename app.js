@@ -8,6 +8,7 @@ var lessMiddleware = require('less-middleware');
 
 var index = require('./routes/index');
 var clientTest = require('./routes/clientTest');
+var serverQuery = require('./routes/serverQuery');
 //var getSystemInfo = require('./routes/getSystemInfo');
 var runCommand = require('./routes/runCommand');
 var tempCommand = require('./routes/tempCommand');
@@ -30,6 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', index);
 app.use('/clientTest', clientTest);
+app.use('/serverQuery', serverQuery);
 //app.use('/getSystemInfo', getSystemInfo);
 app.use('/runCommand', runCommand);
 app.use('/tempCommand', tempCommand);

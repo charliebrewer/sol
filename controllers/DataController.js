@@ -13,11 +13,13 @@ module.exports = function() {
 		output.data.definitionsData = {};
 		output.data.playerData = {};
 		
-		DefinitionsController().getAllDefinitionsData(input, output, function(definitionsData) {
-			output.data.definitionsData = definitionsData;
-			
-			PlayerController().getAllPlayerData(input, output, function(playerData) {
-				output.data.playerData = playerData;
+		DefinitionsController().getAllDefinitionsData(input, output, function(definitionsDataOutput) {
+			output = definitionsDataOutput;
+
+			PlayerController().getAllPlayerData(input, output, function(playerDataOutput) {
+				output = playerDataOutput;
+				
+				callback(output);
 			});
 		});
 	};

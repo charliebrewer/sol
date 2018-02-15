@@ -38,7 +38,7 @@ router.post('/', function(req, res, next) {
 				error = false;
 				
 				// TODO populate player id, where does session validation go?
-				request.plrId = 0;
+				request.plrId = 100000;
 				request.timeMs = Date.now(); // Set time once for the whole request
 				
 				// We set the output to success first, but it may be changed in the call

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>{{ title }}</title>
+		<link rel='stylesheet' href='/stylesheets/style.css' />
+	<script
+		src="https://code.jquery.com/jquery-3.2.1.min.js"
+		integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+		crossorigin="anonymous"></script>
+	</head>
+	
+	<body>
+		<h1>{{ title }}</h1>
+
+		<table>
+			<tr>
+				<td>Command Code:</td>
+				<td><input id="cmdCode" type="text"></td>
+			</tr>
+			<tr>
+				<td>Data:</td>
+				<td><textarea id="inputData">{}</textarea></td>
+			</tr>
+			<tr>
+				<td>Query:</td>
+				<td><input type="submit" onclick="serverQuery();"></td>
+			</tr>
+			<tr>
+				<td>Output:</td>
+				<td><textarea id="outputData" readonly></textarea></td>
+			</tr>
+		</table>
+		
+	</body>
+	
+	<script>
+		function serverQuery() {
+			var cmdCode   = $("#cmdCode").val();
+			var inputData = JSON.parse($("#inputData").val());
+
+			$.post("runCommand", {"req" : JSON.stringify({"command" : cmdCode, "data" : inputData})}, function( output ) {
+				$("#outputData").val(JSON.stringify(output));
+			});
+		}
+	</script>
+	
+</html>

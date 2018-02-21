@@ -1,4 +1,5 @@
 var PlayerDAO = require('../models/PlayerDAO');
+var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 
 module.exports = function() {
 	var module = {};
@@ -21,33 +22,19 @@ module.exports = function() {
 				output.messages.push("Invalid plrId");
 				callback(output);
 			} else {
-				module.getPlayerRecord(plrId, function(playerRecord) {
-					output.playerRecord = playerRecord;
+				PlayerDAO().getPlayer(plrId, function(playerRecord) {
+					output.data.playerRecord = playerRecord;
 					
-					module.getPlayerRoutes(plrId, function(playerRoutes) {
-						output.playerRoutes = playerRoutes;
+					PlayerRoutesDAO().getPlayerRoutes(plrId, function(playerRoutes) {
+						output.data.playerRoutes = playerRoutes;
 						
-						module.getPlayerItems(plrId, function(playerPossessions) {
-							output.playerPossessions = playerPossessions;
-							
-							callback(output);
-						});
+						// etc
+						
+						callback(output);
 					});
 				});
 			}
 		}
-	};
-	
-	module.getPlayerRecord = function(plrId, callback) {
-		callback({});
-	};
-
-	module.getPlayerRoutes = function(plrId, callback) {
-		callback({});
-	};
-
-	module.getPlayerItems = function(plrId, callback) {
-		callback({});
 	};
 	
 	// Update methods

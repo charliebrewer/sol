@@ -1,9 +1,13 @@
 SolGame.PlayerData = {
 	plrId : 0,
 	
+	playerRecord : {},
+	playerRoutes : [],
+	
 	updatePlayerData : function(callback) {
 		SolGame.models.getPlayerData(function(playerData) {
-			//this.items = items etc
+			SolGame.PlayerData.playerRecord = playerData.playerRecord;
+			SolGame.PlayerData.playerRoutes = playerData.playerRoutes;
 			callback();
 		});
 	}

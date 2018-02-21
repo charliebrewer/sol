@@ -5,7 +5,10 @@ SolGame.app = {
 		
 		// Load data from server
 		SolGame.DefinitionsData.updateDefinitionsData(function() {
-			callback();
+			// Load player data
+			SolGame.PlayerData.updatePlayerData(function() {
+				callback();
+			});
 		});
 	},
 	

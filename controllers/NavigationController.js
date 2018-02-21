@@ -27,7 +27,7 @@ module.exports = function() {
 	 * Method that validates a course.
 	 * TODO change inputOrig to input
 	 */
-	module.plotCourse = function(inputOrig, output, callback) {
+	module.plotRoute = function(inputOrig, output, callback) {
 		/*
 		input is array of objects, starting coordinate, ending coordinate, bezier control vector
 		input also contains destination

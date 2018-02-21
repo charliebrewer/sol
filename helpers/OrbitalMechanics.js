@@ -6,10 +6,11 @@ module.exports = function() {
 	module.SOL_ID                 = 1; // Special case for the ID of the sun in the db
 	module.EARTH_SECONDS_IN_YEAR  = 31540000;
 	module.SECONDS_IN_HOUR        = 3600;
-	module.CENTER_OF_SYSTEM       = 2147483648;
+	module.CENTER_OF_SYSTEM       = 0; // Previously was 2^32 / 2, but we're using signed integers for position now
 	module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
 	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
+	module.TIME_UNIT              = module.EARTH_YEAR_PERIOD / 60; // The unit of time used for speed calculations, route checks, etc
 	
 	/**
 	 * Data structure for a location in space and time.
@@ -56,8 +57,8 @@ module.exports = function() {
 		if(null != celestialBodies[i]['pos']) {
 			return; // We have already calculated this position
 		}
-
-		if(celestialBodies[i]['celestial_body_id'] == module.SOL_ID) { // TODO make 1 a constant for the sun
+		
+		if(module.SOL_ID == celestialBodies[i]['celestial_body_id']) {
 			celestialBodies[i]['pos'] = {x : module.CENTER_OF_SYSTEM, y : module.CENTER_OF_SYSTEM};
 		} else {
 			// Look for the parent
@@ -96,6 +97,7 @@ module.exports = function() {
 	 * @param movement Vector array.
 	 * @param celestialBodies Array of objects, each object containing ["mass"=0, "pos"=[0,0]]
 	 * TODO change from seconds to ms
+	 * TODO change params to just take a coordinate
 	 */
 	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
 		var distanceSq = 0;
@@ -131,7 +133,7 @@ module.exports = function() {
 	 */
 	module.getGravitationalPull = function(mass, distance, timeFrameSec) {
 		// Because our gravitational constant is based on 1/60 of an Earth year, we need to adjust it based on our timeframe
-		return (timeFrameSec / (module.EARTH_YEAR_PERIOD / 60)) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
+		return (timeFrameSec / module.TIME_UNIT) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
 	};
 	
 	module.getDistanceSq = function(aX, aY, bX, bY) {
@@ -144,9 +146,9 @@ module.exports = function() {
 	/**
 	 * Removed because we're storing the orbital period in the DB
 	 * Returns integer time in seconds.
-	 * /
+	 */
 	module.getOrbitalPeriod = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
-		
+		return 0;
 		/*
 		var orbitalPeriodSeconds = 2 * Math.PI;
 		
@@ -187,9 +189,48 @@ module.exports = function() {
 		pm  = 1000 * earth mass, should be kg: 1000 * earth mass = X kg
 		earth mass in kg = 5.9722?10 24 kg
 		5.9722 x 10 21
-		* /
+		*/
 	};
-	*/
+	
+	/**
+	 * Function to add a 'orbital_period_hours' field to each celestial body.
+	 *
+	 * @return celestialBodies with populated 'orbital_period_hours' field for each.
+	 */
+	module.populateOrbitalPeriods = function(celestialBodies) {
+		for(var i = 0; i < celestialBodies.length; i++) {
+			if(0 != celestialBodies[i]['parent_body_id']) {
+				celestialBodies[i]['orbital_period_hours'] = 0;
+			}
+			
+			if(undefined == celestialBodies[i]['orbital_period_hours']) {
+				for(var j = 0; j < celestialBodies.length; j++) {
+					if(celestialBodies[i]['parent_body_id'] == celestialBodies[j]['celestial_body_id']) {
+						celestialBodies[i]['orbital_period_hours'] = module.getOrbitalPeriod(
+							celestialBodies[i]['distance_from_parent'],
+							celestialBodies[j]['mass'],
+							module.EARTH_YEAR_PERIOD
+						);
+					}
+				}
+			}
+		}
+		
+		return celestialBodies;
+	};
+	
+	/**
+	 * Similar to getOrbitalPeriod, but returns the speed at which a body is
+	 * travelling relative to it's parent for a given distance.
+	 * TODO this is untested
+	 *
+	 * @return Integer
+	 */
+	module.getOrbitalSpeed = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
+		var orbitalPeriod = module.getOrbitalPeriod(distanceFromParent, parentMass, earthYearPeriodSeconds);
+		
+		return ((2 * Math.PI * distanceFromParent) / module.TIME_UNIT) / orbitalPeriod;
+	};
 
 	return module;
 };

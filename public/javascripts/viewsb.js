@@ -7,10 +7,11 @@ module.exports = function() {
 	module.SOL_ID                 = 1; // Special case for the ID of the sun in the db
 	module.EARTH_SECONDS_IN_YEAR  = 31540000;
 	module.SECONDS_IN_HOUR        = 3600;
-	module.CENTER_OF_SYSTEM       = 2147483648;
+	module.CENTER_OF_SYSTEM       = 0; // Previously was 2^32 / 2, but we're using signed integers for position now
 	module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
 	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
+	module.TIME_UNIT              = module.EARTH_YEAR_PERIOD / 60; // The unit of time used for speed calculations, route checks, etc
 	
 	/**
 	 * Data structure for a location in space and time.
@@ -57,8 +58,8 @@ module.exports = function() {
 		if(null != celestialBodies[i]['pos']) {
 			return; // We have already calculated this position
 		}
-
-		if(celestialBodies[i]['celestial_body_id'] == module.SOL_ID) { // TODO make 1 a constant for the sun
+		
+		if(module.SOL_ID == celestialBodies[i]['celestial_body_id']) {
 			celestialBodies[i]['pos'] = {x : module.CENTER_OF_SYSTEM, y : module.CENTER_OF_SYSTEM};
 		} else {
 			// Look for the parent
@@ -97,6 +98,7 @@ module.exports = function() {
 	 * @param movement Vector array.
 	 * @param celestialBodies Array of objects, each object containing ["mass"=0, "pos"=[0,0]]
 	 * TODO change from seconds to ms
+	 * TODO change params to just take a coordinate
 	 */
 	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
 		var distanceSq = 0;
@@ -132,7 +134,7 @@ module.exports = function() {
 	 */
 	module.getGravitationalPull = function(mass, distance, timeFrameSec) {
 		// Because our gravitational constant is based on 1/60 of an Earth year, we need to adjust it based on our timeframe
-		return (timeFrameSec / (module.EARTH_YEAR_PERIOD / 60)) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
+		return (timeFrameSec / module.TIME_UNIT) * (module.GRAVITATIONAL_CONSTANT * (mass / (distance * distance)));
 	};
 	
 	module.getDistanceSq = function(aX, aY, bX, bY) {
@@ -145,9 +147,9 @@ module.exports = function() {
 	/**
 	 * Removed because we're storing the orbital period in the DB
 	 * Returns integer time in seconds.
-	 * /
+	 */
 	module.getOrbitalPeriod = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
-		
+		return 0;
 		/*
 		var orbitalPeriodSeconds = 2 * Math.PI;
 		
@@ -186,11 +188,50 @@ module.exports = function() {
 		Need to get ratio of adjustments made to distance from parent and parent mass
 		dfp = km / 2.5, should be meters: 2500 * dfp = meters
 		pm  = 1000 * earth mass, should be kg: 1000 * earth mass = X kg
-		earth mass in kg = 5.9722�10 24 kg
+		earth mass in kg = 5.9722?10 24 kg
 		5.9722 x 10 21
-		* /
+		*/
 	};
-	*/
+	
+	/**
+	 * Function to add a 'orbital_period_hours' field to each celestial body.
+	 *
+	 * @return celestialBodies with populated 'orbital_period_hours' field for each.
+	 */
+	module.populateOrbitalPeriods = function(celestialBodies) {
+		for(var i = 0; i < celestialBodies.length; i++) {
+			if(0 != celestialBodies[i]['parent_body_id']) {
+				celestialBodies[i]['orbital_period_hours'] = 0;
+			}
+			
+			if(undefined == celestialBodies[i]['orbital_period_hours']) {
+				for(var j = 0; j < celestialBodies.length; j++) {
+					if(celestialBodies[i]['parent_body_id'] == celestialBodies[j]['celestial_body_id']) {
+						celestialBodies[i]['orbital_period_hours'] = module.getOrbitalPeriod(
+							celestialBodies[i]['distance_from_parent'],
+							celestialBodies[j]['mass'],
+							module.EARTH_YEAR_PERIOD
+						);
+					}
+				}
+			}
+		}
+		
+		return celestialBodies;
+	};
+	
+	/**
+	 * Similar to getOrbitalPeriod, but returns the speed at which a body is
+	 * travelling relative to it's parent for a given distance.
+	 * TODO this is untested
+	 *
+	 * @return Integer
+	 */
+	module.getOrbitalSpeed = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
+		var orbitalPeriod = module.getOrbitalPeriod(distanceFromParent, parentMass, earthYearPeriodSeconds);
+		
+		return ((2 * Math.PI * distanceFromParent) / module.TIME_UNIT) / orbitalPeriod;
+	};
 
 	return module;
 };
@@ -1572,19 +1613,78 @@ SolGame.views = {
 	},
 	
 	renderNavigationView : function() {
+		console.log('in renderNavigationView');
 		// Make sure planets are loaded
 		SolGame.views.loadResources(SolGame.DefinitionsData.celestialBodies, function() {
 			SolGame.views.pixiApp.ticker.add(SolGame.views.updateNavigationView);
 		});
 		// get routes
+		
 		// get the player's location (en route / docked)
 		// add ticker to update data
 	},
 	
-	flag : true,
+	flag : true, // TODO remove
+	startingTimeMs : Date.now(), // TODO remove, temp hack so i can look at the same data over and over
+	totalTimeSec : 10,
+	systemSize : 2500,
 	
 	// This function will be passed to a ticker once assets are loaded to update the position of the planets as desired
 	updateNavigationView : function(delta) {
+		var currTimeMs = Date.now() - SolGame.views.startingTimeMs;
+		currTimeMs = currTimeMs % (SolGame.views.totalTimeSec * 1000);
+		
+		var celestialBodies = SolGame.DefinitionsData.celestialBodies;
+		OrbitalMechanics().populateOrbitalPositions(celestialBodies, currTimeMs);
+		
+		for(var i = 0; i < celestialBodies.length; i++) {
+			celestialBodies[i].sprite.x = ((celestialBodies[i]["pos"].x + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width;
+			celestialBodies[i].sprite.y = ((celestialBodies[i]["pos"].y + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height;
+		};
+		
+		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
+			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i]['route_data'].length; j++) {
+				// TODO we're just asuming we have 1 curve at this time
+				/*
+				{ // Each of these is a single route segment
+					"ts"      : 0, // timestart
+					"fb"       : 0, // [0,100] Integer representing engine burn "fuel burn"
+					"rsx"    : 0, // route start x
+					"rsy"    : 0, // route start y
+					"rex"      : 0, // route end x
+					"rey"      : 0, // route end y
+					"rc1x" : 0, // route control 1 x
+					"rc1y" : 0,
+					"rc2x" : 0,
+					"rc2y" : 0,
+					"sc1x" : 0, // We don't need start or end for speed since they are always 0,0 and 1,1
+					"sc1y" : 0, // speed control 1 y
+					"sc2x" : 0,
+					"sc2y" : 0
+				},
+				*/
+				SolGame.views.route.clear();
+				SolGame.views.route.lineStyle(1, 0xFFFFFF, 1);
+				
+				SolGame.views.route.moveTo(
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsx + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsy + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height
+				);
+				
+				//bezierCurveToSolGame.views.route.quadraticCurveTo(400,400,300,300); // quadratic curve goes control control end end
+				SolGame.views.route.bezierCurveTo(
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1x + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1y + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2x + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2y + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rex + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
+					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rey + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height
+				);
+			}
+		}
+		/*
+		// Below is the old code that displays a bezier curve from one planet to another, just a test. It is also based on the center
+		// of the system constant not being at 0,0 but at 2^32 / 2
 		var timeMs = Date.now();
 		var celestialBodies = SolGame.DefinitionsData.celestialBodies;
 		
@@ -1637,6 +1737,7 @@ SolGame.views = {
 		SolGame.views.route.lineStyle(1, 0xFFFFFF, 1);
 		SolGame.views.route.moveTo(p0,p1);
 		SolGame.views.route.quadraticCurveTo(p2,p3,p4,p5);
+		*/
 	}
 };
 

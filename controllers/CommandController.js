@@ -1,5 +1,6 @@
 var DataController = require('./DataController');
 var DefinitionsController = require('./DefinitionsController');
+var PlayerController = require('./PlayerController');
 var ShopController = require('./ShopController');
 var TempController = require('./TempController');
 
@@ -7,13 +8,13 @@ module.exports = function() {
 	var module = {};
 	
 	var commandCodes = {
-		000 : "TempController().runTempFunction",
+		001 : "TempController().runTempFunction",
 		100 : "DataController().getAllClientData",
 		101 : "DefinitionsController().getAllDefinitionsData",
 		110 : "PlayerController().getAllPlayerData",
 		//200 : "", // regular give an item to a player, admin action only
 		210 : "ShopController().activateShopItem",
-		300 : "NavigationController().plotCourse"
+		310 : "NavigationController().plotRoute"
 	};
 	
 	/**

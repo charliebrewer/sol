@@ -1,5 +1,6 @@
 var PersistentDataAccess = require('../models/PersistentDataAccess');
 //var PlayerDAO = require('../models/PlayerDAO');
+var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 //var ItemController = require('./ItemController');
 var NavigationController = require('./NavigationController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
@@ -10,9 +11,35 @@ module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(input, output, callback) {
-		input.plrId = 0;
+		input.plrId = 100000;
 		input.timeMs = Date.now();
 		output.messages = [];
+		
+		var route_data = [ // route data
+			{ // Each of these is a single route segment
+				"ts"      : 0, // timestart
+				"fb"       : 0, // [0,100] Integer representing engine burn "fuel burn"
+				"rsx"    : -200, // route start x
+				"rsy"    : -200, // route start y
+				"rex"      : 200, // route end x
+				"rey"      : 200, // route end y
+				"rc1x" : 100, // route control 1 x
+				"rc1y" : 100,
+				"rc2x" : 100,
+				"rc2y" : 100,
+				"sc1x" : 0, // We don't need start or end for speed since they are always 0,0 and 1,1
+				"sc1y" : 0, // speed control 1 y
+				"sc2x" : 0,
+				"sc2y" : 0
+			}
+		];
+		
+		PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
+			for(var i = 0; i < playerRoutes.length; i++) {
+				playerRoutes[i]['route_data'] = JSON.stringify(route_data);
+				PlayerRoutesDAO().updatePlayerRoutes(playerRoutes[i]);
+			}
+		});
 		
 		//NavigationController().plotCourse(input, output, callback);
 		/*

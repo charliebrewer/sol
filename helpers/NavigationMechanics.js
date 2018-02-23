@@ -109,44 +109,70 @@ module.exports = function() {
 	 * null if it can't. This function assumes it is passed valid starting and
 	 * ending coordinates.
 	 *
-	 * TODO this function is untested
-	 *
 	 * @return Bezier or null if it couldn't generate one
 	 */
 	module.getCurveFromCrds = function(sCrd, eCrd) {
 		// First check if the opposing point is on the same side that the vector is pointing
-		var sVec = new Victor(sCrd.pos.x, sCrd,pos.y);
-		var eVec = new Victor(eCrd.pos.x, eCrd,pos.y);
+		var diffVec = new Victor(eCrd.pos.x, eCrd.pos.y);
+		diffVec.subtract(new Victor(sCrd.pos.x, sCrd.pos.y));
 		
-		var diffVec = sVec.clone();
-		diffVec.subtract(eVec);
-		var diffVecAngle = diffVec.horizontalAngleDeg();
-		// TODO we need to be using the movement vectors, not the position vectors
-		var sVecAngleDiff = sVec.horizontalAngleDeg() - diffVecAngle;
-		var eVecAngleDiff = eVec.horizontalAngleDeg() - diffVecAngle;
+		// The Victor library's horizontalAngleDeg returns a number between -180
+		// and 180, with a vector of 1,0 returning 0. We need to translate this
+		// to a normal 0-360 number for comparison, hence the 360 constants
+		var diffVecAngle = (360 + diffVec.horizontalAngleDeg()) % 360;
 		
-		/*
-		having trouble visualizing angle calculations here
-		get the angle of the vectors
-		subtract the angles from the diff vector to get the difference in the direction a coordinate desires from the direction towards the other point
-		if the starting vec is between 0 and 90, the ending vec needs to be between -90 and 0
-		conversely, if the starting vec is between -90 and 0, the ending vec needs to be between 0 and 90
-		*/
-		if(!((sVecAngleDiff < 90 && sVecAngleDiff > 0) || (eVecAngleDiff > -90 && eVecAngleDiff < 0)) &&
-		   !((sVecAngleDiff > -90 && sVecAngleDiff < 0) || (eVecAngleDiff < 90 && eVecAngleDiff > 0))) {
+		var sVecAngleDiff = ((360 + (new Victor(sCrd.mov.x, sCrd.mov.y)).horizontalAngleDeg()) % 360) - diffVecAngle;
+		var eVecAngleDiff = ((360 + (new Victor(eCrd.mov.x, eCrd.mov.y)).horizontalAngleDeg()) % 360) - diffVecAngle;
+		
+		// TODO make the upper limit less than 90 to prevent control points that are super far away
+		if(!((sVecAngleDiff < 90 && sVecAngleDiff > 0) && (eVecAngleDiff > -90 && eVecAngleDiff < 0)) &&
+		   !((sVecAngleDiff > -90 && sVecAngleDiff < 0) && (eVecAngleDiff < 90 && eVecAngleDiff > 0))) {
 			return null;
 		}
 		
-		// We have a "simple" curve
-		/*
-		get the intersetction of the two movement vectors based on their respective position vectors
-		get the distance between each position and the intersection point
-		place the control point for the position that is closer to the intersection point at the intersection point
-		place the control point for the postition that is farther on the line to the intersection point an equal distance to the other control point
-		create a bezier curve and return it
-		*/
+		var x1 = sCrd.pos.x;
+		var y1 = sCrd.pos.y;
+		var x2 = sCrd.pos.x + sCrd.mov.x;
+		var y2 = sCrd.pos.y + sCrd.mov.y;
+		var x3 = eCrd.pos.x;
+		var y3 = eCrd.pos.y;
+		var x4 = eCrd.pos.x + eCrd.mov.x;
+		var y4 = eCrd.pos.y + eCrd.mov.y;
 		
-		return module.getBezierCurveCubic(0,0,0,0,0,0,0,0); // TODO
+		var px, py;
+		var denom = (x1 - x2)*(y3 - y4) - (y1 - y2)*(x3 - x4);
+		
+		if(Math.abs(denom) < 0.01) { // 0 means parallel, so we just set the control point to halfway
+			var mag = diffVec.length();
+			
+			diffVec.normalize().multiply(new Victor(mag / 2, mag / 2));
+			diffVec.add(new Victor(sCrd.pos.x, sCrd.pos.y));
+			
+			px = diffVec.x;
+			py = diffVec.y;
+		} else {
+			px = ((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / denom;
+			py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denom;
+		}
+		
+		// TODO modify length of each control point, currently we're just setting both to the same point
+		var cp1 = new Victor(px, py);
+		var cp2 = new Victor(px, py);
+		cp1.subtract(new Victor(sCrd.pos.x, sCrd.pos.y));
+		cp2.subtract(new Victor(eCrd.pos.x, eCrd.pos.y));
+		cp1Mag = cp1.length();
+		cp2Mag = cp2.length();
+		
+		if(cp1Mag > cp2Mag) {
+			cp1.normalize().multiply(new Victor(cp2Mag, cp2Mag));
+		} else {
+			cp2.normalize().multiply(new Victor(cp1Mag, cp1Mag));
+		}
+		
+		cp1.add(new Victor(sCrd.pos.x, sCrd.pos.y));
+		cp2.add(new Victor(eCrd.pos.x, eCrd.pos.y));
+		
+		return module.getBezierCurveCubic(sCrd.pos.x, sCrd.pos.y, cp1.x, cp1.y, cp2.x, cp2.y, eCrd.pos.x, eCrd.pos.y);
 	};
 	
 	/**
@@ -224,7 +250,7 @@ module.exports = function() {
 			if(null != curve) {
 				routeSegs.push(module.getNavSeg(
 					curve,
-					module.getBezierCurveCubic(0,0,0,0,0,0,0,0),
+					module.getBezierCurveCubic(0,0,0,0,0,0,0,0), // TODO need speed segment
 					driftCrds[startIndex].t,
 					driftCrds[endIndex].t,
 					0)

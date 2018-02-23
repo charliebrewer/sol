@@ -1,6 +1,7 @@
 var PersistentDataAccess = require('../models/PersistentDataAccess');
 //var PlayerDAO = require('../models/PlayerDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
+var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
 //var ItemController = require('./ItemController');
 var NavigationController = require('./NavigationController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
@@ -15,31 +16,58 @@ module.exports = function() {
 		input.timeMs = Date.now();
 		output.messages = [];
 		
-		var route_data = [ // route data
-			{ // Each of these is a single route segment
-				"ts"      : 0, // timestart
-				"fb"       : 0, // [0,100] Integer representing engine burn "fuel burn"
-				"rsx"    : -200, // route start x
-				"rsy"    : -200, // route start y
-				"rex"      : 200, // route end x
-				"rey"      : 200, // route end y
-				"rc1x" : 100, // route control 1 x
-				"rc1y" : 100,
-				"rc2x" : 100,
-				"rc2y" : 100,
-				"sc1x" : 0, // We don't need start or end for speed since they are always 0,0 and 1,1
-				"sc1y" : 0, // speed control 1 y
-				"sc2x" : 0,
-				"sc2y" : 0
-			}
-		];
+		var startCrd = OrbitalMechanics().getCrd(400, 0, 0, 200, 0);
+		var endCrd, newCrd;
+		var driftCrds = [];
+		var prevCrd = startCrd;
+		driftCrds.push(prevCrd);
 		
-		PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
-			for(var i = 0; i < playerRoutes.length; i++) {
-				playerRoutes[i]['route_data'] = JSON.stringify(route_data);
-				PlayerRoutesDAO().updatePlayerRoutes(playerRoutes[i]);
+		CelestialBodiesDAO().getBodies(function(celestialBodies) {
+			for(var i = 0; i < 5; i++) {
+				OrbitalMechanics().populateOrbitalPositions(celestialBodies, prevCrd.t * 1000);
+				
+				newCrd = OrbitalMechanics().getDriftCoordinate(prevCrd.pos, prevCrd.mov, prevCrd.t, OrbitalMechanics().TIME_UNIT, celestialBodies);
+				driftCrds.push(newCrd);
+				prevCrd = newCrd;
 			}
+			
+			endCrd = prevCrd;
+			
+			console.log(startCrd);
+			console.log(endCrd);
+			//console.log(driftCrds);
+			
+			var curve = NavigationMechanics().getCurveFromCrds(
+				startCrd, endCrd
+			);
+			
+			//console.log(driftCrds);
+			console.log(curve);
+			
+			PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
+				var playerRoute = playerRoutes.pop();
+				if(undefined == playerRoute) {
+					output.messages.push('no player route');
+					callback(output);
+					return;
+				}
+				
+				playerRoute.route_data[0].rsx = startCrd.pos.x;
+				playerRoute.route_data[0].rsy = startCrd.pos.y;
+				playerRoute.route_data[0].rex = endCrd.pos.x;
+				playerRoute.route_data[0].rey = endCrd.pos.y;
+				playerRoute.route_data[0].rc1x = curve.points[1].x;
+				playerRoute.route_data[0].rc1y = curve.points[1].y;
+				playerRoute.route_data[0].rc2x = curve.points[2].x;
+				playerRoute.route_data[0].rc2y = curve.points[2].y;
+console.log(playerRoute);
+console.log(JSON.stringify(playerRoute));
+				PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
+					callback(output);
+				});
+			});
 		});
+		
 		
 		//NavigationController().plotCourse(input, output, callback);
 		/*

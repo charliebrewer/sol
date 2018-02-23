@@ -18,7 +18,8 @@ module.exports = function() {
 	};
 	
 	module.updatePlayerRoutes = function(playerRoute, callback) {
-		// DANGER Will Robinson - this will select multiple records potentially
+		playerRoute['route_data'] = JSON.stringify(playerRoute['route_data']);
+		
 		PersistentDataAccess().updateOne(module.tableName, module.keyName, module.fields, playerRoute, function(output) {
 			callback(output);
 		});

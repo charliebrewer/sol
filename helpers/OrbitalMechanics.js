@@ -7,7 +7,8 @@ module.exports = function() {
 	module.EARTH_SECONDS_IN_YEAR  = 31540000;
 	module.SECONDS_IN_HOUR        = 3600;
 	module.CENTER_OF_SYSTEM       = 0; // Previously was 2^32 / 2, but we're using signed integers for position now
-	module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
+	//module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
+	module.GRAVITATIONAL_CONSTANT = 10; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
 	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
 	module.TIME_UNIT              = module.EARTH_YEAR_PERIOD / 60; // The unit of time used for speed calculations, route checks, etc
@@ -98,6 +99,7 @@ module.exports = function() {
 	 * @param celestialBodies Array of objects, each object containing ["mass"=0, "pos"=[0,0]]
 	 * TODO change from seconds to ms
 	 * TODO change params to just take a coordinate
+	 * TODO remove timeframe param, movement vector is inherently based on time, all of this needs to be handled internally to OrbitalMechanics
 	 */
 	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
 		var distanceSq = 0;

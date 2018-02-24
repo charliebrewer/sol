@@ -151,7 +151,7 @@ module.exports = function() {
 	 * Returns integer time in seconds.
 	 */
 	module.getOrbitalPeriod = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
-		return 0;
+		return 8761;
 		/*
 		var orbitalPeriodSeconds = 2 * Math.PI;
 		
@@ -202,7 +202,7 @@ module.exports = function() {
 	 */
 	module.populateOrbitalPeriods = function(celestialBodies) {
 		for(var i = 0; i < celestialBodies.length; i++) {
-			if(0 != celestialBodies[i]['parent_body_id']) {
+			if(module.SOL_ID == celestialBodies[i]['celestial_body_id']) {
 				celestialBodies[i]['orbital_period_hours'] = 0;
 			}
 			
@@ -218,7 +218,7 @@ module.exports = function() {
 				}
 			}
 		}
-		
+		console.log(celestialBodies);
 		return celestialBodies;
 	};
 	

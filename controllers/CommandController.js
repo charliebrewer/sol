@@ -1,5 +1,6 @@
 var DataController = require('./DataController');
 var DefinitionsController = require('./DefinitionsController');
+var NavigationController = require('./NavigationController');
 var PlayerController = require('./PlayerController');
 var ShopController = require('./ShopController');
 var TempController = require('./TempController');

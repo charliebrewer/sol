@@ -10,6 +10,9 @@ var Victor = require('victor');
 module.exports = function() {
 	var module = {};
 	
+	module.MAX_ROUTE_SEGMENTS = 10;
+	module.MAX_ROUTE_TIME_MIN = 1;//1440;
+	
 	module.getBezierCurveQuad = function(aX, aY, bX, bY, cX, cY) {
 		return new Bezier(aX, aY, bX, bY, cX, cY);
 	};
@@ -69,38 +72,43 @@ module.exports = function() {
 	
 	module.getVelocityAtPos = function() {};
 	
-	// Used for transport between server and client
-	module.getSimpleNavSeg = function(complexSeg) {
-		var simpleSeg = {};
+	/**
+	 * Function to construct a route segment object from primitive data.
+	 */
+	module.getRouteSegment = function(
+		timeStartSc,
+		fuelBurn,
+		routeStartX,
+		routeStartY,
+		routeEndX,
+		routeEndY,
+		routeControl1X,
+		routeControl1Y,
+		routeControl2X,
+		routeControl2Y,
+		speedControl1X,
+		speedControl1Y,
+		speedControl2X,
+		speedControl2Y,
+	) {
+		var seg = {};
 		
-		simpleSeg.p = complexSeg.posCurve.points;
-		simpleSeg.v = complexSeg.velCurve.points;
-		simpleSeg.sT = complexSeg.sTime;
-		simpleSeg.eT = complexSeg.eTime;
-		simpleSeg.f = complexSeg.fuelPct;
+		seg.ts   = timeStartSc;
+		seg.fb   = fuelBurn;
+		seg.rsx  = routeStartX;
+		seg.rsy  = routeStartY;
+		seg.rex  = routeEndX;
+		seg.rey  = routeEndY;
+		seg.rc1x = routeControl1X;
+		seg.rc1y = routeControl1Y;
+		seg.rc2x = routeControl2X;
+		seg.rc2y = routeControl2Y;
+		seg.sc1x = speedControl1X;
+		seg.sc1y = speedControl1Y;
+		seg.sc2x = speedControl2X;
+		seg.sc2y = speedControl2Y;
 		
-		return simpleSeg;
-	};
-	
-	// Similar to simple, but has bezier objects instead of just points
-	module.getComplexNavSeg = function(simpleSeg) {
-		return module.getNavSeg(
-			module.getBezierCurveQuad(simpleSeg.p[0]["x"],
-			                          simpleSeg.p[0]["y"],
-			                          simpleSeg.p[1]["x"],
-			                          simpleSeg.p[1]["y"],
-			                          simpleSeg.p[2]["x"],
-			                          simpleSeg.p[2]["y"]),
-			module.getBezierCurveQuad(simpleSeg.v[0]["x"],
-			                          simpleSeg.v[0]["y"],
-			                          simpleSeg.v[1]["x"],
-			                          simpleSeg.v[1]["y"],
-			                          simpleSeg.v[2]["x"],
-			                          simpleSeg.v[2]["y"]),
-			simpleSeg.sT,
-			simpleSeg.eT,
-			simpleSeg.f
-		);
+		return seg;
 	};
 	
 	/**
@@ -124,9 +132,12 @@ module.exports = function() {
 		var sVecAngleDiff = ((360 + (new Victor(sCrd.mov.x, sCrd.mov.y)).horizontalAngleDeg()) % 360) - diffVecAngle;
 		var eVecAngleDiff = ((360 + (new Victor(eCrd.mov.x, eCrd.mov.y)).horizontalAngleDeg()) % 360) - diffVecAngle;
 		
+		// We want to ensure this is a simple curve, meaning that the entrance and exit vectors are in line with the
+		// direction of travel, and that they form an arc between them.
 		// TODO make the upper limit less than 90 to prevent control points that are super far away
-		if(!((sVecAngleDiff < 90 && sVecAngleDiff > 0) && (eVecAngleDiff > -90 && eVecAngleDiff < 0)) &&
-		   !((sVecAngleDiff > -90 && sVecAngleDiff < 0) && (eVecAngleDiff < 90 && eVecAngleDiff > 0))) {
+		var maxAngleDiff = 60;
+		if(!((sVecAngleDiff < maxAngleDiff && sVecAngleDiff > 0) && (eVecAngleDiff > (-1 * maxAngleDiff) && eVecAngleDiff < 0)) &&
+		   !((sVecAngleDiff > (-1 * maxAngleDiff) && sVecAngleDiff < maxAngleDiff) && (eVecAngleDiff < maxAngleDiff && eVecAngleDiff > 0))) {
 			return null;
 		}
 		
@@ -155,7 +166,7 @@ module.exports = function() {
 			py = ((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denom;
 		}
 		
-		// TODO modify length of each control point, currently we're just setting both to the same point
+		// We set each control point to be the same distance from it's parent point to smooth out the curve
 		var cp1 = new Victor(px, py);
 		var cp2 = new Victor(px, py);
 		cp1.subtract(new Victor(sCrd.pos.x, sCrd.pos.y));
@@ -172,7 +183,19 @@ module.exports = function() {
 		cp1.add(new Victor(sCrd.pos.x, sCrd.pos.y));
 		cp2.add(new Victor(eCrd.pos.x, eCrd.pos.y));
 		
-		return module.getBezierCurveCubic(sCrd.pos.x, sCrd.pos.y, cp1.x, cp1.y, cp2.x, cp2.y, eCrd.pos.x, eCrd.pos.y);
+		return module.getRouteSegment(
+			sCrd.t,
+			0,
+			sCrd.pos.x,
+			sCrd.pos.y,
+			eCrd.pos.x,
+			eCrd.pos.y,
+			cp1.x,
+			cp1.y,
+			cp2.x,
+			cp2.y,
+			0,0,0,0
+		);
 	};
 	
 	/**
@@ -181,7 +204,22 @@ module.exports = function() {
 	 *
 	 * @return boolean
 	 */
-	module.validateRoute = function(routeSegments, celestialBodies) { return false; };
+	module.validateRoute = function(maxMobility, routeSegments, celestialBodies) {
+		if(module.MAX_ROUTE_SEGMENTS < routeSegments.length) {
+			return false;
+		}
+		
+		for(var i = 1; i < routeSegments.length; i++) {
+			/*
+			check that the start time of the following segment is after the start time of the prev seg
+			check that the start location is the same as the end location of the prev seg
+			check that the exit vector of the prev seg lines up with the entrance vector of this one
+			
+			*/
+		}
+		
+		return true;
+	};
 	
 	/**
 	 * Function to calculate the altitude at which the pull from two celestial
@@ -199,9 +237,15 @@ module.exports = function() {
 	 * The big kahuna. Plots a route between two coordinates if possible,
 	 * returns null if it can't.
 	 *
-	 * @param celestialBodies The list of celestial bodies data, with celestialBody id 0 representing the destination
+	 * @return Array of route segments, or null if a route could not be plotted.
 	 */
-	module.plotRoute = function(maxThrust, maxFuel, sCrd, celestialBodies) {
+	module.plotRoute = function(maxMobility, sCrd, eCrd, celestialBodies) {
+		if(0 == maxMobility) {
+			// We ignore the eCrd param if we are just drifting
+			return module.plotDrift(sCrd, module.MAX_ROUTE_TIME_MIN * 60, celestialBodies);
+		}
+		
+		// TODO Currently only drifting is supported
 		return null;
 	};
 	
@@ -248,18 +292,12 @@ module.exports = function() {
 			curve = module.getCurveFromCrds(driftCrds[startIndex], driftCrds[endIndex]);
 			
 			if(null != curve) {
-				routeSegs.push(module.getNavSeg(
-					curve,
-					module.getBezierCurveCubic(0,0,0,0,0,0,0,0), // TODO need speed segment
-					driftCrds[startIndex].t,
-					driftCrds[endIndex].t,
-					0)
-				);
+				routeSegs.push(curve);
 				
 				startIndex = endIndex;
 				endIndex = driftCrds.length -1;
 			} else {
-				endIndex = Math.round(endIndex / 2);
+				endIndex = Math.round(endIndex - ((endIndex - startIndex) / 2));
 				if(endIndex <= startIndex) {
 					console.log("Unable to plot drift");
 					// TODO throw err

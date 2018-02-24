@@ -1,7 +1,10 @@
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
+var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
+
+var ShipController = require('../controllers/ShipController');
 
 var Bezier = require('bezier-js');
 
@@ -21,14 +24,15 @@ module.exports = function() {
 	module.MIN_PLOT_WAIT_SEC = 5; // Minimum number of seconds in the future the player can start a new course
 	module.MAX_COURSE_DURATION_SEC = 10; // Maximum time allowed for a given course
 	module.COURSE_RESOLUTION_MS = 5000; // 
-	module.MAX_SEGMENTS = 10;
+	module.MAX_SEGMENTS = 10; // TODO remove, moved to NavigationMechanics
 	
 	/**
 	 * Method that validates a course.
 	 * TODO change inputOrig to input
 	 */
-	module.plotRoute = function(inputOrig, output, callback) {
+	module.plotRoute = function(input, output, callback) {
 		/*
+		TODO this entire function is now BS, we've moved validation to NaviationMechanics, this references the old segment styles, and was never tested
 		input is array of objects, starting coordinate, ending coordinate, bezier control vector
 		input also contains destination
 		- valid destinations are stations and circular orbits around celestial bodies and intercepts of other courses
@@ -51,96 +55,69 @@ module.exports = function() {
 		Verify that the player never collides with a celestial body
 		*/
 		// TODO remove temp input
-		input = {
-			plrId : inputOrig.plrId,
-			timeMs : inputOrig.timeMs,
+		CelestialBodiesDAO().getBodies(function(celestialBodies) {
+		input.data = {
 			destinationType : module.DESTINATION_TYPE_STATION,
 			destinationId   : 1,
-			shipId          : 1,
-			course : [
-				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
-				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
-				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
-					12345,12350, 0.5)),
-				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
-				    NavigationMechanics().getBezierCurveQuad(5,6,3,4,7,8),
-				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
-					12350,12355, 0.5)),
-				NavigationMechanics().getSimpleNavSeg(NavigationMechanics().getNavSeg(
-				    NavigationMechanics().getBezierCurveQuad(7,8,3,4,5,6),
-				    NavigationMechanics().getBezierCurveQuad(1,2,3,4,5,6),
-					12355,12360, 0.5))
-			]
+			plrShipId       : 1,
+			timeEnd         : 0,
+			routeSegments   : NavigationMechanics().plotRoute(0, OrbitalMechanics().getCrd(600, -400, 0, 100, 0), null, celestialBodies)
 		};
 		
-		//console.log(JSON.stringify(input));
+		console.log(input.data);
 		
 		// Before we retrieve any data, we check basic info about the request first
-		if(undefined == input.destinationType || undefined == input.destinationId || undefined == input.shipId || undefined == input.course) {
+		if(
+			undefined == input.data.destinationType ||
+			undefined == input.data.destinationId ||
+			undefined == input.data.plrShipId ||
+			undefined == input.data.timeEnd ||
+			undefined == input.data.routeSegments) {
 			output.messages.push("Input invalid.");
 			callback(output);
 			return;
 		}
 		
-		if(input.course.length > module.MAX_SEGMENTS) {
-			output.messages.push("More segments than allowed.");
-			callback(output);
-			return;
-		}
-		
-		if(input.course[0].sT < (input.timeMs / 1000) + module.MIN_PLOT_WAIT_SEC) {
-			output.messages.push("Starts too soon.");
-			callback(output);
-			return;
-		}
-		
-		if(input.course[0].eT > (input.timeMs / 1000) + module.MIN_PLOT_WAIT_SEC + module.MAX_COURSE_DURATION_SEC) {
-			output.messages.push("Ends too late.");
-			callback(output);
-			return;
-		}
+		/*
+		verify start time is in the future
+		verify it doesn't go on too long, not too many segments, is that handled here or in mechanics?
+		*/
 		
 		// Check to see that each curve links to the next
 		// Note we are dealing with "simple segments"
-		var prevSeg = null;
-		var segments = [];
 		
-		input.course.forEach(function(seg) {
-			if(seg.sT > seg.eT) {
-				// TODO handle error
-				console.log("Segment has start time after its end time.");
-			}
-			
-			if(seg.f < 0 || seg.f > 1) {
-				// TODO handle error
-				console.log("Invalid fuel used.");
-			}
-			
-			if(null != prevSeg) {
-				if(prevSeg.p[2].x != seg.p[0].x || prevSeg.p[2].y != seg.p[0].y) {
-					// TODO handle error
-					console.log("Curves do not start and end at the same point.");
+		
+		
+		CelestialBodiesDAO().getBodies(function(celestialBodies) {
+			ShipController().getShipMobility(input.data.plrShipId, function(shipMobility) {
+				if(!NavigationMechanics().validateRoute(shipMobility, input.data.routeSegments, celestialBodies)) {
+					output.messages.push("Route failed validation");
+					callback(output);
+					return;
 				}
 				
-				if(prevSeg.eT != seg.sT) {
-					// TODO handle error
-					console.log("Curves do not start and end at the same time.");
-				}
-			}
-			
-			segments.push(NavigationMechanics().getComplexNavSeg(seg));
-			
-			prevSeg = seg;
+				// TODO this is a hack to use our one route and update it
+				PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
+					var playerRoute = playerRoutes.pop();
+					if(undefined == playerRoute) {
+						output.messages.push('no player route');
+						callback(output);
+						return;
+					}
+					
+					playerRoute['destination_type'] = input.data.destinationType;
+					playerRoute['destination_id'] = input.data.destinationId;
+					playerRoute['time_end'] = input.data.timeEnd;
+					playerRoute['route_data'] = input.data.routeSegments;
+					
+					PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
+						callback(output);
+					});
+				});
+			});
 		});
 		
-		
-		/*
-		PlayerController().getAllPlayerData(input, output, function(playerData) {
-			
-		});
-		*/
-
-		callback(output);
+		}); // TODO remove. celestial bodies wrapper
 	};
 	
 	module.plotOrbit = function(input, output, callback) {

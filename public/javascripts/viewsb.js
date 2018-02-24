@@ -234,6 +234,15 @@ module.exports = function() {
 		
 		return ((2 * Math.PI * distanceFromParent) / module.TIME_UNIT) / orbitalPeriod;
 	};
+	
+	module.getStationPosition = function(stationDef, timeMs, celestialBodies, updateBodyPositions = true) {
+		if(updateBodyPositions) {
+			celestialBodies = module.populateOrbitalPositions(celestialBodies, timeMs);
+		}
+		
+		// TODO
+		return {x : 0, y : 0};
+	};
 
 	return module;
 };
@@ -1577,11 +1586,6 @@ SolGame.views = {
 		SolGame.views.pixiApp = new PIXI.Application();
 		document.body.appendChild(SolGame.views.pixiApp.view);
 		
-		// TODO remove
-		SolGame.views.route = new PIXI.Graphics();
-		SolGame.views.route.lineStyle(1, 0xFFFFFF, 1);
-		SolGame.views.pixiApp.stage.addChild(SolGame.views.route);
-		
 		SolGame.views.drift = new PIXI.Graphics();
 		SolGame.views.drift.lineStyle(1, 0xFFFFFF);
 		SolGame.views.pixiApp.stage.addChild(SolGame.views.drift);
@@ -1627,7 +1631,7 @@ SolGame.views = {
 	
 	flag : true, // TODO remove
 	startingTimeMs : Date.now(), // TODO remove, temp hack so i can look at the same data over and over
-	totalTimeSec : 10,
+	totalTimeSec : 100,
 	systemSize : 2500,
 	driftCrds : [],
 	
@@ -1638,27 +1642,28 @@ SolGame.views = {
 			SolGame.views.pixiApp.ticker.add(SolGame.views.updateNavigationView);
 		});
 		
-		var startCrd = null;
+		var route;
+		
+		var startCrd = OrbitalMechanics().getCrd(
+			SolGame.PlayerData.playerRoutes[0]['route_data'][0].rsx,
+			SolGame.PlayerData.playerRoutes[0]['route_data'][0].rsy,
+			0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
+			100,
+			0
+		);
 		
 		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
 			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i]['route_data'].length; j++) {
-				// TODO we're just asuming we have 1 curve at this time
-				SolGame.views.route.clear();
-				SolGame.views.route.lineStyle(1, 0xFFFFFF, 1);
+				route = new PIXI.Graphics();
+				route.lineStyle(1, 0xFFFFFF, 1);
+				SolGame.views.pixiApp.stage.addChild(route);
 				
-				SolGame.views.route.moveTo(
-					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsx + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
-					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsy + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height
+				route.moveTo(
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsx, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsy, false)
 				);
 				
-				startCrd = OrbitalMechanics().getCrd(
-					SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsx,
-					SolGame.PlayerData.playerRoutes[i]['route_data'][j].rsy,
-					0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
-					200,
-					0
-				);
-				
+				/*
 				SolGame.views.controlPoint.drawCircle(
 					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1x, true),
 					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1y, false),
@@ -1669,9 +1674,9 @@ SolGame.views = {
 					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2y, false),
 					10
 				);
+				*/
 				
-				console.log(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1x);
-				SolGame.views.route.bezierCurveTo(
+				route.bezierCurveTo(
 					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1x + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
 					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1y + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.height,
 					((SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2x + (SolGame.views.systemSize / 2)) / SolGame.views.systemSize) * SolGame.views.pixiApp.renderer.width,
@@ -1687,14 +1692,12 @@ SolGame.views = {
 			var newCrd;
 			SolGame.views.driftCrds.push(prevCrd); // prime ze pump
 			
-			for(var i = 0; i < 10; i++) {
+			for(var i = 0; i < 100; i++) {
 				OrbitalMechanics().populateOrbitalPositions(SolGame.DefinitionsData.celestialBodies, prevCrd.t * 1000);
 				newCrd = OrbitalMechanics().getDriftCoordinate(prevCrd.pos, prevCrd.mov, prevCrd.t, 1, SolGame.DefinitionsData.celestialBodies);
 				SolGame.views.driftCrds.push(newCrd);
 				prevCrd = newCrd;
 			}
-			
-console.log(SolGame.views.driftCrds);
 		}
 		
 		// get the player's location (en route / docked)
@@ -1733,7 +1736,6 @@ console.log(SolGame.views.driftCrds);
 		}
 		
 		SolGame.views.drift.drawCircle(SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.x, true), SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.y, false), 10);
-		
 		
 		
 		

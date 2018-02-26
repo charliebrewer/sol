@@ -11,7 +11,7 @@ module.exports = function() {
 	var module = {};
 	
 	module.MAX_ROUTE_SEGMENTS = 10;
-	module.MAX_ROUTE_TIME_MIN = 1;//1440;
+	module.MAX_ROUTE_TIME_SEC = 60;//1440;
 	
 	/*
 	The following several functions deal with the creation of "large" and
@@ -138,15 +138,13 @@ module.exports = function() {
 		return curRouteSeg.posCurve.get(spdPos.y);
 	};
 	
-	module.getVelocityAtPos = function() {};
-	
 	/**
 	 * Attempts to generate a route segment from two coordinates. This is a
 	 * "dumb" function, it just attempts to generate a valid segment and returns
 	 * null if it can't. This function assumes it is passed valid starting and
 	 * ending coordinates.
 	 *
-	 * @return Bezier or null if it couldn't generate one
+	 * @return A routeSegSml data structure or null if it couldn't generate one
 	 */
 	module.getCurveFromCrds = function(sCrd, eCrd) {
 		// First check if the opposing point is on the same side that the vector is pointing
@@ -224,18 +222,67 @@ module.exports = function() {
 	 *
 	 * @return boolean
 	 */
-	module.validateRoute = function(maxMobility, routeSegments, celestialBodies) {
-		if(module.MAX_ROUTE_SEGMENTS < routeSegments.length) {
+	module.validateRoute = function(maxMobility, routeSegsLrg, celestialBodies) {
+		if(0 >= routeSegsLrg.length || module.MAX_ROUTE_SEGMENTS < routeSegsLrg.length)
 			return false;
+		if(module.MAX_ROUTE_TIME_SEC < routeSegsLrg[routeSegsLrg.length - 1].eCrd.t - routeSegsLrg[0].sCrd.t)
+			return false;
+		
+		//var x1,y1,x2,y2,x3,y3,x4,y4;
+		
+		for(let i = 0; i < routeSegsLrg.length; i++) {
+			if(routeSegsLrg[i].sCrd.t     != Math.round(routeSegsLrg[i].sCrd.t))
+				return false;
+			if(routeSegsLrg[i].sCrd.pos.x != Math.round(routeSegsLrg[i].sCrd.pos.x))
+				return false;
+			if(routeSegsLrg[i].sCrd.pos.y != Math.round(routeSegsLrg[i].sCrd.pos.y))
+				return false;
+			if(routeSegsLrg[i].eCrd.t     != Math.round(routeSegsLrg[i].eCrd.t))
+				return false;
+			if(routeSegsLrg[i].eCrd.pos.x != Math.round(routeSegsLrg[i].eCrd.pos.x))
+				return false;
+			if(routeSegsLrg[i].eCrd.pos.y != Math.round(routeSegsLrg[i].eCrd.pos.y))
+				return false;
+			
+			// Ensure the start crd is equal to the end crd of the previous segment.
+			// Because we verify that the bezier curve lines up with the start
+			// and end coordinates, we don't need to compare the vectors of two
+			// separate segments, just the start and end coordinates.
+			if(1 <= i) {
+				if(routeSegsLrg[i].sCrd.t     != routeSegsLrg[i - 1].eCrd.t)
+					return false;
+				if(routeSegsLrg[i].sCrd.pos.x != routeSegsLrg[i - 1].eCrd.pos.x)
+					return false;
+				if(routeSegsLrg[i].sCrd.pos.y != routeSegsLrg[i - 1].eCrd.pos.y)
+					return false;
+			}
+			
+			if(routeSegsLrg[i].sCrd.t >= routeSegsLrg[i].eCrd.t)
+				return false;
+			
+			// Ensure our coordinates positions are equal to our curves
+			if(routeSegsLrg[i].sCrd.pos.x != routeSegsLrg[i].posCurve.points[0].x)
+				return false;
+			if(routeSegsLrg[i].sCrd.pos.y != routeSegsLrg[i].posCurve.points[0].y)
+				return false;
+			if(routeSegsLrg[i].eCrd.pos.x != routeSegsLrg[i].posCurve.points[3].x)
+				return false;
+			if(routeSegsLrg[i].eCrd.pos.y != routeSegsLrg[i].posCurve.points[3].y)
+				return false;
+			
+			/*
+			verify that the bezier curve is a "simple" curve as defined in the getCurveFromCrds function above
+			verify that the bezier curve is travelling in the same direction as the start and end coordinate movement vectors
+			verify that the speed the ship is travelling at the start and end is equal to the movement vector of the corresponding crds
+			*/
 		}
 		
-		for(var i = 1; i < routeSegments.length; i++) {
-			/*
-			check that the start time of the following segment is after the start time of the prev seg
-			check that the start location is the same as the end location of the prev seg
-			check that the exit vector of the prev seg lines up with the entrance vector of this one
-			
-			*/
+		// Now that we have verified the basics of the segments, we verify that the ship can power itself along the proposed path
+		for(let i = 0; i < routeSegsLrg.length; i++) {
+			// TODO
+			// get the drift crd
+			// compare it to the position along the path
+			// see if the ship's power is greater than the vector difference between the points
 		}
 		
 		return true;
@@ -262,7 +309,7 @@ module.exports = function() {
 	module.plotRoute = function(maxMobility, sCrd, eCrd, celestialBodies) {
 		if(0 == maxMobility) {
 			// We ignore the eCrd param if we are just drifting
-			return module.plotDrift(sCrd, module.MAX_ROUTE_TIME_MIN * 60, celestialBodies);
+			return module.plotDrift(sCrd, module.MAX_ROUTE_TIME_SEC, celestialBodies);
 		}
 		
 		// TODO Currently only drifting is supported

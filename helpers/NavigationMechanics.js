@@ -13,33 +13,105 @@ module.exports = function() {
 	module.MAX_ROUTE_SEGMENTS = 10;
 	module.MAX_ROUTE_TIME_MIN = 1;//1440;
 	
-	module.getBezierCurveQuad = function(aX, aY, bX, bY, cX, cY) {
-		return new Bezier(aX, aY, bX, bY, cX, cY);
+	/*
+	The following several functions deal with the creation of "large" and
+	"small" routes. The principal difference between large and small is the use
+	of Bezier objects or the simple data points.
+	
+	Small segments are created with basic data, and large segments are created
+	with small segments. There is a single function to convert a large route to
+	a small route, since we mostly deal with large segments and only convert to
+	small for transport or data storage.
+	*/
+	
+	module.getRouteSegSml = function(
+		startCrd, endCrd, routeControl1X, routeControl1Y, routeControl2X, routeControl2Y,
+		speedControl1X, speedControl1Y, speedControl2X, speedControl2Y, fuelBurn
+	) {
+		var routeSegSml = {};
+		
+		routeSegSml.sCrd = startCrd;
+		routeSegSml.eCrd = endCrd;
+		routeSegSml.rc1  = {x : routeControl1X, y : routeControl1Y};
+		routeSegSml.rc2  = {x : routeControl2X, y : routeControl2Y};
+		routeSegSml.sc1  = {x : speedControl1X, y : speedControl1Y};
+		routeSegSml.sc2  = {x : speedControl2X, y : speedControl2Y};
+		routeSegSml.fb   = fuelBurn;
+		
+		return routeSegSml;
 	};
 	
-	module.getBezierCurveCubic = function(aX, aY, bX, bY, cX, cY, dX, dY) {
-		return new Bezier(aX, aY, bX, bY, cX, cY, dX, dY);
+	module.getRouteSegLrg = function(routeSegSml) {
+		var routeSegLrg = {};
+		
+		routeSegLrg.sCrd = routeSegSml.sCrd;
+		routeSegLrg.eCrd = routeSegSml.eCrd;
+		
+		routeSegLrg.posCurve = new Bezier(
+			routeSegSml.sCrd.pos.x, routeSegSml.sCrd.pos.y,
+			routeSegSml.rc1.x, routeSegSml.rc1.y,
+			routeSegSml.rc2.x, routeSegSml.rc2.y,
+			routeSegSml.eCrd.pos.x, routeSegSml.eCrd.pos.y,
+		);
+		
+		routeSegLrg.spdCurve = new Bezier(
+			0,0,
+			routeSegSml.sc1.x, routeSegSml.sc1.y,
+			routeSegSml.sc2.x, routeSegSml.sc2.y,
+			1,1
+		);
+		
+		routeSegLrg.fb = routeSegSml.fb;
+		
+		return routeSegLrg;
 	};
 	
-	/**
-	 * @param positionCurve and velocityCurve Bezier objects.
-	 * @param startTime and endTime Integer timestamps.
-	 * @param fuelPct Float from 0-1 representing the amount of fuel used in this segment.
-	 * TODO add data representing the distance at which the ship's engines can be seen
-	 * TODO rename to getRouteSeg
-	 * - Perhaps a 0-100 integer? Need to be able to calculate visibility with this data alone, not by also calculating the player's ship thrust
-	 */
-	module.getNavSeg = function(positionCurve, velocityCurve, startTime, endTime, fuelPct) {
-		var seg = {};
+	module.getRouteSml = function(destinationType, destinationId, plrShipId, routeSegsSml) {
+		var routeSml = {};
 		
-		seg.posCurve = positionCurve;
-		seg.velCurve = velocityCurve;
-		seg.sTime = parseInt(startTime);
-		seg.eTime = parseInt(endTime);
+		routeSml.dt = destinationType;
+		routeSml.di = destinationId;
+		routeSml.ps = plrShipId;
+		routeSml.rd = routeSegsSml;
 		
-		seg.fuelPct = fuelPct;
+		return routeSml;
+	};
+	
+	module.getRouteLrg = function(routeSml) {
+		var routeLrg = {};
 		
-		return seg;
+		routeLrg.destinationType = routeSml.dt;
+		routeLrg.destinationId   = routeSml.di;
+		routeLrg.plrShipId       = routeSml.ps;
+		routeLrg.routeSegs       = [];
+		
+		routeSml.rd.forEach(function(routeSegSml) {
+			routeLrg.routeSegs.push(module.getRouteSegLrg(routeSegSml));
+		});
+		
+		return routeLrg;
+	};
+	
+	module.convertRouteLrgToSml = function(routeLrg) {
+		var routeSegsSml = [];
+		
+		routeLrg.routeSegs.forEach(function(routeSegLrg) {
+			routeSegsSml.push(module.getRouteSegSml(
+				routeSegLrg.sCrd,
+				routeSegLrg.eCrd,
+				routeSegLrg.posCurve.points[1].x,
+				routeSegLrg.posCurve.points[1].y,
+				routeSegLrg.posCurve.points[2].x,
+				routeSegLrg.posCurve.points[2].y,
+				routeSegLrg.spdCurve.points[1].x,
+				routeSegLrg.spdCurve.points[1].y,
+				routeSegLrg.spdCurve.points[2].x,
+				routeSegLrg.spdCurve.points[2].y,
+				routeSegLrg.fb
+			));
+		});
+		
+		return module.getRouteSml(routeLrg.destinationType, routeLrg.destinationId, routeLrg.plrShipId, routeSegsSml);
 	};
 	
 	module.getPosOnSeg = function(navSeg, timeMs) {
@@ -71,45 +143,6 @@ module.exports = function() {
 	};
 	
 	module.getVelocityAtPos = function() {};
-	
-	/**
-	 * Function to construct a route segment object from primitive data.
-	 */
-	module.getRouteSegment = function(
-		timeStartSc,
-		fuelBurn,
-		routeStartX,
-		routeStartY,
-		routeEndX,
-		routeEndY,
-		routeControl1X,
-		routeControl1Y,
-		routeControl2X,
-		routeControl2Y,
-		speedControl1X,
-		speedControl1Y,
-		speedControl2X,
-		speedControl2Y,
-	) {
-		var seg = {};
-		
-		seg.ts   = timeStartSc;
-		seg.fb   = fuelBurn;
-		seg.rsx  = routeStartX;
-		seg.rsy  = routeStartY;
-		seg.rex  = routeEndX;
-		seg.rey  = routeEndY;
-		seg.rc1x = routeControl1X;
-		seg.rc1y = routeControl1Y;
-		seg.rc2x = routeControl2X;
-		seg.rc2y = routeControl2Y;
-		seg.sc1x = speedControl1X;
-		seg.sc1y = speedControl1Y;
-		seg.sc2x = speedControl2X;
-		seg.sc2y = speedControl2Y;
-		
-		return seg;
-	};
 	
 	/**
 	 * Attempts to generate a route segment from two coordinates. This is a
@@ -183,18 +216,9 @@ module.exports = function() {
 		cp1.add(new Victor(sCrd.pos.x, sCrd.pos.y));
 		cp2.add(new Victor(eCrd.pos.x, eCrd.pos.y));
 		
-		return module.getRouteSegment(
-			sCrd.t,
-			0,
-			sCrd.pos.x,
-			sCrd.pos.y,
-			eCrd.pos.x,
-			eCrd.pos.y,
-			cp1.x,
-			cp1.y,
-			cp2.x,
-			cp2.y,
-			0,0,0,0
+		return module.getRouteSegSml(
+			sCrd, eCrd, cp1.x, cp1.y, cp2.x, cp2.y,
+			0,0,0,0,0 // TODO add speed control point determination as well as fuel burn levels
 		);
 	};
 	

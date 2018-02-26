@@ -61,7 +61,7 @@ module.exports = function() {
 			destinationId   : 1,
 			plrShipId       : 1,
 			timeEnd         : 0,
-			routeSegments   : NavigationMechanics().plotRoute(0, OrbitalMechanics().getCrd(600, -400, 0, 100, 0), null, celestialBodies)
+			routeSegments   : NavigationMechanics().plotRoute(0, OrbitalMechanics().getCrd(600, -200, 0, 100, 0), null, celestialBodies)
 		};
 		
 		console.log(input.data);

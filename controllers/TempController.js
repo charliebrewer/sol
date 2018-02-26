@@ -16,6 +16,31 @@ module.exports = function() {
 		input.timeMs = Date.now();
 		output.messages = [];
 		
+		/*
+		module.getRouteSegSml = function(
+		startCrd, endCrd, routeControl1X, routeControl1Y, routeControl2X, routeControl2Y,
+		speedControl1X, speedControl1Y, speedControl2X, speedControl2Y, fuelBurn
+		*/
+		var routeSegsSml = [];
+		for(let i = 0; i < 3; i++) {
+			var routeSegSml = NavigationMechanics().getRouteSegSml(OrbitalMechanics().getCrd(0, 1, 2, 3, 1234567890), OrbitalMechanics().getCrd(0, 1, 2, 3, 1234567890), 0, 1, 2, 3, 4, 5, 6, 7, 100);
+			routeSegsSml.push(routeSegSml);
+		}
+		
+		var routeSml = NavigationMechanics().getRouteSml(1, 2, 12893798, routeSegsSml);
+		console.log(JSON.stringify(routeSml));
+		output.messages.push(routeSml);
+		
+		var routeLrg = NavigationMechanics().getRouteLrg(routeSml);
+		//console.log(JSON.stringify(routeLrg));
+		output.messages.push(routeLrg);
+		
+		var routeSml2 = NavigationMechanics().convertRouteLrgToSml(routeLrg);
+		console.log(JSON.stringify(routeSml2));
+		
+		callback(output);
+		
+		/*
 		var startCrd = OrbitalMechanics().getCrd(400, 0, 0, 200, 0);
 		var endCrd, newCrd;
 		var driftCrds = [];

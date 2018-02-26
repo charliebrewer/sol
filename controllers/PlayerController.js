@@ -1,6 +1,8 @@
 var PlayerDAO = require('../models/PlayerDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 
+var NavigationMechanics = require('../helpers/NavigationMechanics');
+
 module.exports = function() {
 	var module = {};
 	
@@ -26,7 +28,18 @@ module.exports = function() {
 					output.data.playerRecord = playerRecord;
 					
 					PlayerRoutesDAO().getPlayerRoutes(plrId, function(playerRoutes) {
-						output.data.playerRoutes = playerRoutes;
+						var pr = [];
+						
+						for(let i = 0; i < playerRoutes.length; i++) {
+							pr.push(NavigationMechanics().getRouteSml(
+								playerRoutes[i]['destination_type'],
+								playerRoutes[i]['destination_id'],
+								0, // TODO add ship ID
+								playerRoutes[i]['route_data']
+							));
+						}
+						
+						output.data.playerRoutes = pr;
 						
 						// etc
 						

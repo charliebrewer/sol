@@ -1,4 +1,5 @@
 var OrbitalMechanics = require('../../helpers/OrbitalMechanics');
+var NavigationMechanics = require('../../helpers/NavigationMechanics');
 
 SolGame.views = {
 	pixiApp : null,
@@ -59,6 +60,7 @@ SolGame.views = {
 	systemSizeX : 2500,
 	systemSizeY : 1875,
 	driftCrds : [],
+	routeLrg : null,
 	
 	renderNavigationView : function() {
 		console.log('in renderNavigationView');
@@ -67,47 +69,53 @@ SolGame.views = {
 			SolGame.views.pixiApp.ticker.add(SolGame.views.updateNavigationView);
 		});
 		
+		SolGame.views.curvePos = new PIXI.Graphics();
+		SolGame.views.curvePos.lineStyle(1, 0xFFFFFF);
+		SolGame.views.pixiApp.stage.addChild(SolGame.views.curvePos);
+		
 		var route;
 		
 		var startCrd = OrbitalMechanics().getCrd(
-			SolGame.PlayerData.playerRoutes[0]['route_data'][0].sCrd.pos.x,
-			SolGame.PlayerData.playerRoutes[0]['route_data'][0].sCrd.pos.y,
+			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.x,
+			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.y,
 			0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
 			100,
 			0
 		);
 		
+		SolGame.views.routeLrg = NavigationMechanics().getRouteLrg(SolGame.PlayerData.playerRoutes[0]);
+		
 		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
-			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i]['route_data'].length; j++) {
+			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i].rd.length; j++) {
 				route = new PIXI.Graphics();
 				route.lineStyle(1, 0xFFFFFF, 1);
 				SolGame.views.pixiApp.stage.addChild(route);
 				
 				route.moveTo(
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].sCrd.pos.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].sCrd.pos.y, false)
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].sCrd.pos.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].sCrd.pos.y, false)
 				);
 				
 				/*
 				SolGame.views.controlPoint.drawCircle(
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1.x, false),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc1.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc1.x, false),
 					10
 				);
 				SolGame.views.controlPoint2.drawCircle(
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2.x, false),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc2.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc2.x, false),
 					10
 				);
 				*/
 				
 				route.bezierCurveTo(
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc1.y, false),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].rc2.y, false),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].eCrd.pos.x, true),
-					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i]['route_data'][j].eCrd.pos.y, false)
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc1.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc1.y, false),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc2.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc2.y, false),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].eCrd.pos.x, true),
+					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].eCrd.pos.y, false)
 				);
 			}
 		}
@@ -125,6 +133,7 @@ SolGame.views = {
 			}
 		}
 		
+		SolGame.views.curvePos.drawCircle(0,0,10);
 		// get the player's location (en route / docked)
 		// add ticker to update data
 	},
@@ -162,8 +171,10 @@ SolGame.views = {
 		
 		SolGame.views.drift.drawCircle(SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.x, true), SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.y, false), 10);
 		
+		var curCurvePos = NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
 		
-		
+		SolGame.views.curvePos.position.x = SolGame.views.getRenderedPosition(curCurvePos.x, true);
+		SolGame.views.curvePos.position.y = SolGame.views.getRenderedPosition(curCurvePos.y, false);
 		
 		//SolGame.views.drift.drawCircle(100,100,100);
 		

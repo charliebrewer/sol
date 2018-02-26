@@ -114,32 +114,28 @@ module.exports = function() {
 		return module.getRouteSml(routeLrg.destinationType, routeLrg.destinationId, routeLrg.plrShipId, routeSegsSml);
 	};
 	
-	module.getPosOnSeg = function(navSeg, timeMs) {
-		// TODO this needs to be rewritten since the navSeg datastructure was updated
-		if(timeMs / 1000 < navSeg.sCrd.t || timeMs / 1000 > navSeg.eCrd.t)
-			return null; // We aren't on this segment right now
+	/**
+	 * Returns the current x,y position based on a large route segment data structure.
+	 *
+	 * @return {x : 0, y : 0} or null if this route is not active.
+	 */
+	module.getPosOnRoute = function(routeLrg, timeMs) {
+		var curRouteSeg = null;
+		for(let i = 0; i < routeLrg.routeSegs.length; i++) {
+			if((1000 * routeLrg.routeSegs[i].sCrd.t) <= timeMs && (1000 * routeLrg.routeSegs[i].eCrd.t) >= timeMs) {
+				curRouteSeg = routeLrg.routeSegs[i];
+				break;
+			}
+		};
 		
-		var pctComplete = ((timeMs / 1000) - navSeg.sCrd.t) / (navSeg.eCrd.t - navSeg.sCrd.t);
+		if(null == curRouteSeg)
+			return null;
 		
-		var vCurve = new Bezier(navSeg.velCurve.p0.x,
-		                        navSeg.velCurve.p0.y,
-		                        navSeg.velCurve.p1.x,
-		                        navSeg.velCurve.p1.y,
-		                        navSeg.velCurve.p2.x,
-		                        navSeg.velCurve.p2.y);
+		var pctComplete = (timeMs - (1000 * curRouteSeg.sCrd.t)) / ((1000 * curRouteSeg.eCrd.t) - (1000 * curRouteSeg.sCrd.t));
 		
-		var t2 = vCurve.get(pctComplete);
+		var spdPos = curRouteSeg.spdCurve.get(pctComplete);
 		
-		var pCurve = new Bezier(navSeg.sCrd.pos.x,
-		                        navSeg.sCrd.pos.y,
-		                        navSeg.cPoint.x,
-		                        navSeg.cPoint.y,
-		                        navSeg.eCrd.pos.x,
-		                        navSeg.eCrd.pos.y);
-		
-		var pos = pCurve.get(t2);
-		
-		return {x : pos.x, y : pos.y};
+		return curRouteSeg.posCurve.get(spdPos.y);
 	};
 	
 	module.getVelocityAtPos = function() {};
@@ -218,7 +214,7 @@ module.exports = function() {
 		
 		return module.getRouteSegSml(
 			sCrd, eCrd, cp1.x, cp1.y, cp2.x, cp2.y,
-			0,0,0,0,0 // TODO add speed control point determination as well as fuel burn levels
+			0.5,0.5,0.5,0.5,0 // TODO add speed control point determination as well as fuel burn levels
 		);
 	};
 	

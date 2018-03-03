@@ -11,7 +11,8 @@ module.exports = function() {
 	var module = {};
 	
 	module.MAX_ROUTE_SEGMENTS = 10;
-	module.MAX_ROUTE_TIME_SEC = 60;//1440;
+	module.MAX_ROUTE_TIME_SEC = 20;//1440;
+	module.MAX_ROUTE_SEG_TURN_DEG = 60;
 	
 	/*
 	The following several functions deal with the creation of "large" and
@@ -134,7 +135,7 @@ module.exports = function() {
 		var pctComplete = (timeMs - (1000 * curRouteSeg.sCrd.t)) / ((1000 * curRouteSeg.eCrd.t) - (1000 * curRouteSeg.sCrd.t));
 		
 		var spdPos = curRouteSeg.spdCurve.get(pctComplete);
-		
+		console.log(spdPos.y);
 		return curRouteSeg.posCurve.get(spdPos.y);
 	};
 	
@@ -143,6 +144,11 @@ module.exports = function() {
 	 * "dumb" function, it just attempts to generate a valid segment and returns
 	 * null if it can't. This function assumes it is passed valid starting and
 	 * ending coordinates.
+	 *
+	 * TODO redefine this so that it always returns a curve. We'd like this function to just give a curve from point A to point B.
+	 * This function's primary goal is to map the curve based on the crds, which includes the direction the curve travels, and the
+	 * speed along that path. The onus will be on the user of this function to make sure the crds are "sane". If you pass garbage,
+	 * you'll get garbage.
 	 *
 	 * @return A routeSegSml data structure or null if it couldn't generate one
 	 */
@@ -162,11 +168,14 @@ module.exports = function() {
 		// We want to ensure this is a simple curve, meaning that the entrance and exit vectors are in line with the
 		// direction of travel, and that they form an arc between them.
 		// TODO make the upper limit less than 90 to prevent control points that are super far away
-		var maxAngleDiff = 60;
+		// TODO remove this conditional
+		/*
+		var maxAngleDiff = 90;
 		if(!((sVecAngleDiff < maxAngleDiff && sVecAngleDiff > 0) && (eVecAngleDiff > (-1 * maxAngleDiff) && eVecAngleDiff < 0)) &&
 		   !((sVecAngleDiff > (-1 * maxAngleDiff) && sVecAngleDiff < maxAngleDiff) && (eVecAngleDiff < maxAngleDiff && eVecAngleDiff > 0))) {
 			return null;
 		}
+		*/
 		
 		var x1 = sCrd.pos.x;
 		var y1 = sCrd.pos.y;
@@ -210,9 +219,10 @@ module.exports = function() {
 		cp1.add(new Victor(sCrd.pos.x, sCrd.pos.y));
 		cp2.add(new Victor(eCrd.pos.x, eCrd.pos.y));
 		
+		// We now have our position curve defined, time to generate the curve that defines our speed
 		return module.getRouteSegSml(
 			sCrd, eCrd, cp1.x, cp1.y, cp2.x, cp2.y,
-			0.5,0.5,0.5,0.5,0 // TODO add speed control point determination as well as fuel burn levels
+			0,0.5,1,0.5,0 // TODO add speed control point determination as well as fuel burn levels
 		);
 	};
 	
@@ -283,6 +293,7 @@ module.exports = function() {
 			// get the drift crd
 			// compare it to the position along the path
 			// see if the ship's power is greater than the vector difference between the points
+			// verify we don't collide with any celestial bodies
 		}
 		
 		return true;
@@ -309,71 +320,50 @@ module.exports = function() {
 	module.plotRoute = function(maxMobility, sCrd, eCrd, celestialBodies) {
 		if(0 == maxMobility) {
 			// We ignore the eCrd param if we are just drifting
-			return module.plotDrift(sCrd, module.MAX_ROUTE_TIME_SEC, celestialBodies);
+			return module.plotDrift(sCrd, sCrd.t + module.MAX_ROUTE_TIME_SEC, celestialBodies);
 		}
 		
 		// TODO Currently only drifting is supported
 		return null;
 	};
 	
-	/**
-	 * Function to plot a ship drifting through space for a period of time.
-	 *
-	 * @param sCrd OrbitalMechanics().getCrd data structure.
-	 *
-	 * @return Array of route segments.
-	 */
-	module.plotDrift = function(sCrd, endTime, celestialBodies) {
-		var driftCrds = [];
-		driftCrds.push(sCrd);
+	module.plotDrift = function(sCrd, endTimeSc, celestialBodies) {
+		var retSegsLrg = [];
+		var curStartCrd = sCrd;
+		var oldDriftCrd = sCrd;
+		var newDriftCrd;
+		var curStartCrdAngle = (360 + (new Victor(curStartCrd.pos.x + curStartCrd.mov.x, curStartCrd.pos.y + curStartCrd.mov.y)).horizontalAngleDeg()) % 360;
+		var newDriftCrdAngle;
 		
-		var curTime = sCrd.t;
-		
-		if(curTime > endTime) {
-			// TODO throw err
-			console.log("Trying to drift with invalid times: " + curTime + " is after " + endTime);
-			return [];
-		}
-		
-		var prevCrd = sCrd;
-		var newCrd;
-		
-		while(prevCrd.t + OrbitalMechanics().TIME_UNIT < endTime) {
-			OrbitalMechanics().populateOrbitalPositions(celestialBodies, prevCrd.t * 1000);
+		while(curStartCrd.t < endTimeSc) {
+			OrbitalMechanics().populateOrbitalPositions(celestialBodies, oldDriftCrd.t * 1000);
 			
-			newCrd = OrbitalMechanics().getDriftCoordinate(prevCrd.pos, prevCrd.mov, prevCrd.t, OrbitalMechanics().TIME_UNIT, celestialBodies);
+			newDriftCrd = OrbitalMechanics().getDriftCoordinate(
+				oldDriftCrd.pos,
+				oldDriftCrd.mov,
+				oldDriftCrd.t,
+				OrbitalMechanics().TIME_UNIT,
+				celestialBodies,
+				false
+			);
 			
-			driftCrds.push(newCrd);
+			newDriftCrdAngle = (360 + (new Victor(newDriftCrd.pos.x + newDriftCrd.mov.x, newDriftCrd.pos.y + newDriftCrd.mov.y)).horizontalAngleDeg()) % 360;
 			
-			prevCrd = newCrd;
-		}
-		
-		// driftCrds is now an array of coordinates that we need to map to a bezier curve
-		var startIndex = 0;
-		var endIndex = driftCrds.length -1;
-		var curve = null;
-		var routeSegs = [];
-		var safetyCounter = 100; // Max loops
-		
-		while(startIndex < driftCrds.length -1 && safetyCounter-- > 0) {
-			curve = module.getCurveFromCrds(driftCrds[startIndex], driftCrds[endIndex]);
-			
-			if(null != curve) {
-				routeSegs.push(curve);
+			if(newDriftCrd.t > endTimeSc ||
+				(module.MAX_ROUTE_SEG_TURN_DEG < Math.abs(curStartCrdAngle - newDriftCrdAngle) &&
+				module.MAX_ROUTE_SEG_TURN_DEG < 360 - Math.abs(curStartCrdAngle - newDriftCrdAngle))
+			) {
+				retSegsLrg.push(module.getCurveFromCrds(curStartCrd, oldDriftCrd));
 				
-				startIndex = endIndex;
-				endIndex = driftCrds.length -1;
+				curStartCrd = oldDriftCrd;
+				
+				curStartCrdAngle = (360 + (new Victor(curStartCrd.pos.x + curStartCrd.mov.x, curStartCrd.pos.y + curStartCrd.mov.y)).horizontalAngleDeg()) % 360;
 			} else {
-				endIndex = Math.round(endIndex - ((endIndex - startIndex) / 2));
-				if(endIndex <= startIndex) {
-					console.log("Unable to plot drift");
-					// TODO throw err
-					return [];
-				}
+				oldDriftCrd = newDriftCrd;
 			}
 		}
 		
-		return routeSegs;
+		return retSegsLrg;
 	};
 	
 	return module;

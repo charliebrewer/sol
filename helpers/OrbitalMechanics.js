@@ -101,7 +101,7 @@ module.exports = function() {
 	 * TODO change params to just take a coordinate
 	 * TODO remove timeframe param, movement vector is inherently based on time, all of this needs to be handled internally to OrbitalMechanics
 	 */
-	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies) {
+	module.getDriftCoordinate = function(position, movement, timestamp, timeframe, celestialBodies, round = false) {
 		var distanceSq = 0;
 		var gravitationalVector = new Victor(0, 0);
 		var movementVector = new Victor(movement.x, movement.y);
@@ -125,6 +125,13 @@ module.exports = function() {
 		}
 		
 		positionVector.add(movementVector);
+		
+		if(round) {
+			positionVector.x = Math.round(positionVector.x);
+			positionVector.y = Math.round(positionVector.y);
+			movementVector.x = Math.round(movementVector.x);
+			movementVector.y = Math.round(movementVector.y);
+		}
 		
 		return module.getCrd(positionVector.x, positionVector.y, movementVector.x, movementVector.y, timestamp + timeframe);
 	};
@@ -242,6 +249,10 @@ module.exports = function() {
 		// TODO
 		return {x : 0, y : 0};
 	};
-
+	
+	module.getEscapeVelocity = function(parentMass, distanceFromParent) {
+		return Math.sqrt((2 * module.GRAVITATIONAL_CONSTANT * parentMass) / distanceFromParent);
+	};
+	
 	return module;
 };

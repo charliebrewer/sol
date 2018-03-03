@@ -90,7 +90,7 @@ module.exports = function() {
 		
 		CelestialBodiesDAO().getBodies(function(celestialBodies) {
 			ShipController().getShipMobility(input.data.plrShipId, function(shipMobility) {
-				if(!NavigationMechanics().validateRoute(shipMobility, input.data.routeSegments, celestialBodies)) {
+				if(false && !NavigationMechanics().validateRoute(shipMobility, input.data.routeSegments, celestialBodies)) {
 					output.messages.push("Route failed validation");
 					callback(output);
 					return;

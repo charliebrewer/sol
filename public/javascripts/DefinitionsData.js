@@ -6,6 +6,7 @@ SolGame.DefinitionsData = {
 	updateDefinitionsData : function(callback) {
 		SolGame.models.getDefinitionsData(function(definitionsData) {
 			SolGame.DefinitionsData.celestialBodies = definitionsData.celestialBodies;
+			SolGame.DefinitionsData.stations = definitionsData.stations;
 			callback();
 		});
 	}

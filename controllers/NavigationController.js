@@ -21,7 +21,7 @@ module.exports = function() {
 	module.LOCATION_TYPE_SPACE    = 3;
 	module.LOCATION_TYPE_PROPERTY = 4;
 	
-	module.MIN_PLOT_WAIT_SEC = 5; // Minimum number of seconds in the future the player can start a new course
+	module.MIN_START_DELAY_SC = 5; // Minimum number of seconds in the future the player can start a new course
 	module.MAX_COURSE_DURATION_SEC = 10; // Maximum time allowed for a given course
 	module.COURSE_RESOLUTION_MS = 5000; // 
 	module.MAX_SEGMENTS = 10; // TODO remove, moved to NavigationMechanics
@@ -61,7 +61,12 @@ module.exports = function() {
 			destinationId   : 1,
 			plrShipId       : 1,
 			timeEnd         : 0,
-			routeSegments   : NavigationMechanics().plotRoute(0, OrbitalMechanics().getCrd(600, -200, 0, 100, 0), null, celestialBodies)
+			routeSegments   : NavigationMechanics().plotRoute(
+				100,
+				OrbitalMechanics().getCrd(600, -200, 0, 100, 0),
+				null,
+				celestialBodies
+			)
 		};
 		
 		console.log(input.data);
@@ -143,7 +148,7 @@ module.exports = function() {
 		*/
 		// TODO verify input contains a coordinate
 		var startCrd = input.startCrd;
-		if(startCrd.t < input.timeMs + module.MIN_PLOT_WAIT_SEC) {
+		if(startCrd.t < input.timeMs + module.MIN_START_DELAY_SC) {
 			output.messages.push("Course starts too soon.");
 			callback(output);
 			return;

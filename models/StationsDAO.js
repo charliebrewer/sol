@@ -16,8 +16,7 @@ module.exports = function() {
 					if(celestialBodies[i]['celestial_body_id'] == station['parent_body_id']) {
 						station['orbital_period_hours'] = OrbitalMechanics().getOrbitalPeriod(
 							station['distance_from_parent'],
-							celestialBodies[i]['mass'],
-							OrbitalMechanics().EARTH_YEAR_PERIOD
+							celestialBodies[i]['mass']
 						);
 						
 						break;

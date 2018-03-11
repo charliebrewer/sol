@@ -63,11 +63,12 @@ SolGame.views = {
 	routeLrg : null,
 	
 	renderNavigationView : function() {
-		console.log('in renderNavigationView');
 		// Make sure planets are loaded
-		SolGame.views.loadResources(SolGame.DefinitionsData.celestialBodies, function() {
+		SolGame.views.loadResources(SolGame.DefinitionsData.celestialBodies.concat(SolGame.DefinitionsData.stations), function() {
 			SolGame.views.pixiApp.ticker.add(SolGame.views.updateNavigationView);
 		});
+		
+		return; // We're not rendering the below curve atm
 		
 		SolGame.views.curvePos = new PIXI.Graphics();
 		SolGame.views.curvePos.lineStyle(1, 0xFFFFFF);
@@ -156,11 +157,21 @@ SolGame.views = {
 		var celestialBodies = SolGame.DefinitionsData.celestialBodies;
 		OrbitalMechanics().populateOrbitalPositions(celestialBodies, currTimeMs);
 		
-		for(var i = 0; i < celestialBodies.length; i++) {
+		for(let i = 0; i < celestialBodies.length; i++) {
 			celestialBodies[i].sprite.x = SolGame.views.getRenderedPosition(celestialBodies[i]["pos"].x, true);
 			celestialBodies[i].sprite.y = SolGame.views.getRenderedPosition(celestialBodies[i]["pos"].y, false);
 		};
 		
+		// Show our stations
+		var stationPos;
+		SolGame.DefinitionsData.stations.forEach(function(station) {
+			stationPos = SolGame.Shared.OrbitalMechanics().getStationCrd(station, currTimeMs, celestialBodies, false);
+			station.sprite.x = SolGame.views.getRenderedPosition(stationPos.pos.x, true);
+			station.sprite.y = SolGame.views.getRenderedPosition(stationPos.pos.y, false);
+		});
+		
+		// Below is the drift circle rendering
+		return;
 		for(var i = 0; i < SolGame.views.driftCrds.length; i++) {
 			if(-1 == SolGame.views.currentDriftI || (SolGame.views.driftCrds[i].t * 1000 <= currTimeMs && SolGame.views.driftCrds[i].t > SolGame.views.driftCrds[SolGame.views.currentDriftI].t)) {
 				SolGame.views.currentDriftI = i;

@@ -7,8 +7,8 @@ module.exports = function() {
 	module.EARTH_SECONDS_IN_YEAR  = 31540000;
 	module.SECONDS_IN_HOUR        = 3600;
 	module.CENTER_OF_SYSTEM       = 0; // Previously was 2^32 / 2, but we're using signed integers for position now
-	//module.GRAVITATIONAL_CONSTANT = 56334677000000; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
-	module.GRAVITATIONAL_CONSTANT = 10; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
+	module.GRAVITATIONAL_CONSTANT = 0.001; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
+	//module.GRAVITATIONAL_CONSTANT = 10; // Calculated based on Earth at 150m km and Sun mass of 330m over period of 1/60th a revolution
 	module.EARTH_YEAR_PERIOD      = 60; // In game seconds that the Earth takes to orbit the sun
 	module.PI_OVER_180            = 0.01745329251;
 	module.TIME_UNIT              = module.EARTH_YEAR_PERIOD / 60; // The unit of time used for speed calculations, route checks, etc
@@ -156,49 +156,11 @@ module.exports = function() {
 	 * Removed because we're storing the orbital period in the DB
 	 * Returns integer time in seconds.
 	 */
-	module.getOrbitalPeriod = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
-		return 8761;
-		/*
-		var orbitalPeriodSeconds = 2 * Math.PI;
-		
-		var distanceOverMass = Math.sqrt(Math.pow(distanceFromParent, 3) / parentMass * 10000);
-
-		orbitalPeriodSeconds *= distanceOverMass;
-		
-		//orbitalPeriodSeconds /= 2.5;
-		
-		//orbitalPeriodSeconds *= earthYearPeriodSeconds;
-		
-		return Math.round(orbitalPeriodSeconds);
-		* /
-		distanceFromParent *= 2500;
-		parentMass *= (5.9736 * Math.pow(10, 11));
-
-		//var constant = 2388880000000000000000;
-		//2.38888e+21
-		//2388880000000000000000
-		
-		var orbitalPeriodSeconds = (4 * Math.pow(Math.PI, 2)) * Math.pow(distanceFromParent, 3);
-		orbitalPeriodSeconds = orbitalPeriodSeconds / parentMass;
-		orbitalPeriodSeconds = Math.sqrt(orbitalPeriodSeconds);
-
-		return Math.round(orbitalPeriodSeconds);
-		
-		
-		/*
-		seconds / 3600 = (2 * pi * radical(distanceFromParent / mass of orbited body)) / 3600
-		tInSeconds = radical((4 * pi ^ 2 * distanceFromParentInMeters ^ 3) / mass in kg)
-		39.4635 * above / 
-		
-		For Earth only:
-		orbitalPeriodSeconds * X * earthYearPeriodSeconds = earthYearPeriodSeconds
-		
-		Need to get ratio of adjustments made to distance from parent and parent mass
-		dfp = km / 2.5, should be meters: 2500 * dfp = meters
-		pm  = 1000 * earth mass, should be kg: 1000 * earth mass = X kg
-		earth mass in kg = 5.9722?10 24 kg
-		5.9722 x 10 21
-		*/
+	module.getOrbitalPeriod = function(distanceFromParent, parentMass) {
+		return 2 * Math.PI * Math.sqrt(
+			(distanceFromParent * distanceFromParent * distanceFromParent) /
+			(module.GRAVITATIONAL_CONSTANT * parentMass)
+		);
 	};
 	
 	/**
@@ -217,8 +179,7 @@ module.exports = function() {
 					if(celestialBodies[i]['parent_body_id'] == celestialBodies[j]['celestial_body_id']) {
 						celestialBodies[i]['orbital_period_hours'] = module.getOrbitalPeriod(
 							celestialBodies[i]['distance_from_parent'],
-							celestialBodies[j]['mass'],
-							module.EARTH_YEAR_PERIOD
+							celestialBodies[j]['mass']
 						);
 					}
 				}
@@ -236,18 +197,31 @@ module.exports = function() {
 	 * @return Integer
 	 */
 	module.getOrbitalSpeed = function(distanceFromParent, parentMass, earthYearPeriodSeconds) {
-		var orbitalPeriod = module.getOrbitalPeriod(distanceFromParent, parentMass, earthYearPeriodSeconds);
+		var orbitalPeriod = module.getOrbitalPeriod(distanceFromParent, parentMass);
 		
 		return ((2 * Math.PI * distanceFromParent) / module.TIME_UNIT) / orbitalPeriod;
 	};
 	
-	module.getStationPosition = function(stationDef, timeMs, celestialBodies, updateBodyPositions = true) {
+	module.getStationCrd = function(stationDef, timeMs, celestialBodies, updateBodyPositions = true) {
 		if(updateBodyPositions) {
-			celestialBodies = module.populateOrbitalPositions(celestialBodies, timeMs);
+			module.populateOrbitalPositions(celestialBodies, timeMs);
 		}
 		
-		// TODO
-		return {x : 0, y : 0};
+		var pos = {x : 0, y : 0};
+		
+		for(let i = 0; i < celestialBodies.length; i++) {
+			if(celestialBodies[i]['celestial_body_id'] == stationDef['parent_body_id']) {
+				pos = module.getOrbitalPosition(
+					celestialBodies[i]['pos'],
+					stationDef['distance_from_parent'],
+					stationDef['orbital_period_hours'],
+					timeMs,
+					0
+				);
+			}
+		}
+		
+		return module.getCrd(pos.x, pos.y, 0, 0, 0);
 	};
 	
 	module.getEscapeVelocity = function(parentMass, distanceFromParent) {

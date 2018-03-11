@@ -135,7 +135,6 @@ module.exports = function() {
 		var pctComplete = (timeMs - (1000 * curRouteSeg.sCrd.t)) / ((1000 * curRouteSeg.eCrd.t) - (1000 * curRouteSeg.sCrd.t));
 		
 		var spdPos = curRouteSeg.spdCurve.get(pctComplete);
-		console.log(spdPos.y);
 		return curRouteSeg.posCurve.get(spdPos.y);
 	};
 	
@@ -233,6 +232,8 @@ module.exports = function() {
 	 * @return boolean
 	 */
 	module.validateRoute = function(maxMobility, routeSegsLrg, celestialBodies) {
+		return true; // We are temporarily accepting all routes
+		
 		if(0 >= routeSegsLrg.length || module.MAX_ROUTE_SEGMENTS < routeSegsLrg.length)
 			return false;
 		if(module.MAX_ROUTE_TIME_SEC < routeSegsLrg[routeSegsLrg.length - 1].eCrd.t - routeSegsLrg[0].sCrd.t)
@@ -323,8 +324,10 @@ module.exports = function() {
 			return module.plotDrift(sCrd, sCrd.t + module.MAX_ROUTE_TIME_SEC, celestialBodies);
 		}
 		
-		// TODO Currently only drifting is supported
-		return null;
+		// TODO Actual implementation of orbital plotting
+		var curve = module.getCurveFromCrds(sCrd, eCrd);
+		
+		return [curve];
 	};
 	
 	module.plotDrift = function(sCrd, endTimeSc, celestialBodies) {

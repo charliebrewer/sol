@@ -9,7 +9,7 @@ SolGame.NavigationController = {
 	LOCATION_TYPE_SPACE    : 3,
 	LOCATION_TYPE_PROPERTY : 4,
 	
-	MIN_START_DELAY_SC : 30, // Minimum milliseconds in the future that we are allowing for a course to start
+	MIN_START_DELAY_SC : 5, // Minimum seconds in the future that we are allowing for a course to start
 	
 	plotRoute : function(startTimeSc, plrShipId, destinationType, destinationId) {
 		if(startTimeSc < (Date.now() / 1000) + SolGame.NavigationController.MIN_START_DELAY_SC) {
@@ -18,7 +18,7 @@ SolGame.NavigationController = {
 		}
 		
 		// TODO verify ship information and get the player's ship
-		var shipThrust = 1000;
+		var shipThrust = 100;
 		
 		// TODO handle other destination types
 		if(SolGame.NavigationController.DESTINATION_TYPE_STATION != destinationType) {
@@ -43,7 +43,7 @@ SolGame.NavigationController = {
 		);
 		
 		var distance = (new SolGame.Shared.Victor(sPosVec.x, sPosVec.y)).subtract(new SolGame.Shared.Victor(eCrd.pos.x, eCrd.pos.y)).magnitude();
-		var endTimeSc = startTimeSc + (distance / shipThrust);
+		var endTimeSc = Math.round(startTimeSc + (distance / shipThrust));
 		
 		eCrd = SolGame.NavigationController.getCrdFromLocation(
 			endTimeSc * 1000,
@@ -58,12 +58,12 @@ SolGame.NavigationController = {
 			SolGame.DefinitionsData.celestialBodies
 		);
 		
-		return SolGame.Shared.NavigationMechanics().getRouteLrg(SolGame.Shared.NavigationMechanics().getRouteSml(
+		return SolGame.Shared.NavigationMechanics().getRouteSml(
 			destinationType,
 			destinationId,
 			plrShipId,
 			routeSegsSml
-		));
+		);
 	},
 	
 	lockInRoute : function(route) {

@@ -12,13 +12,14 @@
   <body>
     <h1>{{ title }}</h1>
     <p>Welcome to {{ title }}</p>
-	<input type="submit" onclick="plotRoute();"></input>
+	<input type="submit" onclick="plotRouteISS();" value="To ISS"></input>
+	<input type="submit" onclick="plotRouteSol();" value="To SolObs"></input>
   </body>
   
   <!-- <script src="javascripts/pixi_test.js"></script> -->
   <script src="javascripts/common.js"></script>
   <script src="javascripts/models.js"></script>
-  <script src="javascripts/viewsb.js"></script>
+  <script src="javascripts/views.js"></script>
   <script src="javascripts/Sharedb.js"></script>
   <script src="javascripts/DefinitionsData.js"></script>
   <script src="javascripts/PlayerData.js"></script>
@@ -29,15 +30,28 @@
 	SolGame.app.start(function() {});
   });
   
-  plotRoute = function() {
+  var waitTime = 6;
+  
+  plotRouteISS = function() {
     var route = SolGame.NavigationController.plotRoute(
-	  Date.now() + 60000,
+	  (Date.now() / 1000) + waitTime,
 	  0,
 	  SolGame.NavigationController.DESTINATION_TYPE_STATION,
 	  1
 	);
 	
-	console.log(route);
+	SolGame.models.plotRoute(route, function() {});
+  }
+  
+  plotRouteSol = function() {
+    var route = SolGame.NavigationController.plotRoute(
+	  (Date.now() / 1000) + waitTime,
+	  0,
+	  SolGame.NavigationController.DESTINATION_TYPE_STATION,
+	  2
+	);
+	
+	SolGame.models.plotRoute(route, function() {});
   }
   //SolGame.models.updateDefinitionsData(function() {console.log(SolGame.DefinitionsData)});
   //console.log(SolGame);

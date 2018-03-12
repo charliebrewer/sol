@@ -55,6 +55,7 @@ module.exports = function() {
 		Verify that the player never collides with a celestial body
 		*/
 		// TODO remove temp input
+		/* TODONE
 		CelestialBodiesDAO().getBodies(function(celestialBodies) {
 		input.data = {
 			destinationType : module.DESTINATION_TYPE_STATION,
@@ -70,8 +71,10 @@ module.exports = function() {
 		};
 		
 		console.log(input.data);
+		*/
 		
 		// Before we retrieve any data, we check basic info about the request first
+		/*
 		if(
 			undefined == input.data.destinationType ||
 			undefined == input.data.destinationId ||
@@ -82,6 +85,7 @@ module.exports = function() {
 			callback(output);
 			return;
 		}
+		*/
 		
 		/*
 		verify start time is in the future
@@ -91,11 +95,11 @@ module.exports = function() {
 		// Check to see that each curve links to the next
 		// Note we are dealing with "simple segments"
 		
-		
+		var routeLrg = NavigationMechanics().getRouteLrg(input.data);
 		
 		CelestialBodiesDAO().getBodies(function(celestialBodies) {
-			ShipController().getShipMobility(input.data.plrShipId, function(shipMobility) {
-				if(false && !NavigationMechanics().validateRoute(shipMobility, input.data.routeSegments, celestialBodies)) {
+			ShipController().getShipMobility(routeLrg.plrShipId, function(shipMobility) {
+				if(false && !NavigationMechanics().validateRoute(shipMobility, routeLrg.routeSegments, celestialBodies)) {
 					output.messages.push("Route failed validation");
 					callback(output);
 					return;
@@ -110,10 +114,12 @@ module.exports = function() {
 						return;
 					}
 					
-					playerRoute['destination_type'] = input.data.destinationType;
-					playerRoute['destination_id'] = input.data.destinationId;
-					playerRoute['time_end'] = input.data.timeEnd;
-					playerRoute['route_data'] = input.data.routeSegments;
+					playerRoute['destination_type'] = routeLrg.destinationType;
+					playerRoute['destination_id'] = routeLrg.destinationId;
+					playerRoute['time_end'] = routeLrg.timeEnd;
+					
+					// For the route itself we want to use the small version
+					playerRoute['route_data'] = input.data.rd;
 					
 					PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
 						callback(output);
@@ -121,8 +127,6 @@ module.exports = function() {
 				});
 			});
 		});
-		
-		}); // TODO remove. celestial bodies wrapper
 	};
 	
 	module.plotOrbit = function(input, output, callback) {

@@ -1,6 +1,3 @@
-var OrbitalMechanics = require('../../helpers/OrbitalMechanics');
-var NavigationMechanics = require('../../helpers/NavigationMechanics');
-
 SolGame.views = {
 	pixiApp : null,
 	
@@ -68,7 +65,7 @@ SolGame.views = {
 			SolGame.views.pixiApp.ticker.add(SolGame.views.updateNavigationView);
 		});
 		
-		return; // We're not rendering the below curve atm
+		//return; // We're not rendering the below curve atm
 		
 		SolGame.views.curvePos = new PIXI.Graphics();
 		SolGame.views.curvePos.lineStyle(1, 0xFFFFFF);
@@ -76,7 +73,7 @@ SolGame.views = {
 		
 		var route;
 		
-		var startCrd = OrbitalMechanics().getCrd(
+		var startCrd = SolGame.Shared.OrbitalMechanics().getCrd(
 			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.x,
 			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.y,
 			0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
@@ -84,7 +81,7 @@ SolGame.views = {
 			0
 		);
 		
-		SolGame.views.routeLrg = NavigationMechanics().getRouteLrg(SolGame.PlayerData.playerRoutes[0]);
+		SolGame.views.routeLrg = SolGame.Shared.NavigationMechanics().getRouteLrg(SolGame.PlayerData.playerRoutes[0]);
 		
 		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
 			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i].rd.length; j++) {
@@ -127,8 +124,8 @@ SolGame.views = {
 			SolGame.views.driftCrds.push(prevCrd); // prime ze pump
 			
 			for(var i = 0; i < 100; i++) {
-				OrbitalMechanics().populateOrbitalPositions(SolGame.DefinitionsData.celestialBodies, prevCrd.t * 1000);
-				newCrd = OrbitalMechanics().getDriftCoordinate(prevCrd.pos, prevCrd.mov, prevCrd.t, 1, SolGame.DefinitionsData.celestialBodies);
+				SolGame.Shared.OrbitalMechanics().populateOrbitalPositions(SolGame.DefinitionsData.celestialBodies, prevCrd.t * 1000);
+				newCrd = SolGame.Shared.OrbitalMechanics().getDriftCoordinate(prevCrd.pos, prevCrd.mov, prevCrd.t, 1, SolGame.DefinitionsData.celestialBodies);
 				SolGame.views.driftCrds.push(newCrd);
 				prevCrd = newCrd;
 			}
@@ -151,11 +148,12 @@ SolGame.views = {
 	
 	// This function will be passed to a ticker once assets are loaded to update the position of the planets as desired
 	updateNavigationView : function(delta) {
-		var currTimeMs = Date.now() - SolGame.views.startingTimeMs;
-		currTimeMs = currTimeMs % (SolGame.views.totalTimeSec * 1000);
+		//var currTimeMs = Date.now() - SolGame.views.startingTimeMs;
+		//currTimeMs = currTimeMs % (SolGame.views.totalTimeSec * 1000);
+		var currTimeMs = Date.now();
 		
 		var celestialBodies = SolGame.DefinitionsData.celestialBodies;
-		OrbitalMechanics().populateOrbitalPositions(celestialBodies, currTimeMs);
+		SolGame.Shared.OrbitalMechanics().populateOrbitalPositions(celestialBodies, currTimeMs);
 		
 		for(let i = 0; i < celestialBodies.length; i++) {
 			celestialBodies[i].sprite.x = SolGame.views.getRenderedPosition(celestialBodies[i]["pos"].x, true);
@@ -171,7 +169,7 @@ SolGame.views = {
 		});
 		
 		// Below is the drift circle rendering
-		return;
+		/*
 		for(var i = 0; i < SolGame.views.driftCrds.length; i++) {
 			if(-1 == SolGame.views.currentDriftI || (SolGame.views.driftCrds[i].t * 1000 <= currTimeMs && SolGame.views.driftCrds[i].t > SolGame.views.driftCrds[SolGame.views.currentDriftI].t)) {
 				SolGame.views.currentDriftI = i;
@@ -181,11 +179,14 @@ SolGame.views = {
 		}
 		
 		SolGame.views.drift.drawCircle(SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.x, true), SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.y, false), 10);
+		*/
 		
-		var curCurvePos = NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
+		var curCurvePos = SolGame.Shared.NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
 		
-		SolGame.views.curvePos.position.x = SolGame.views.getRenderedPosition(curCurvePos.x, true);
-		SolGame.views.curvePos.position.y = SolGame.views.getRenderedPosition(curCurvePos.y, false);
+		if(null != curCurvePos) {
+			SolGame.views.curvePos.position.x = SolGame.views.getRenderedPosition(curCurvePos.x, true);
+			SolGame.views.curvePos.position.y = SolGame.views.getRenderedPosition(curCurvePos.y, false);
+		}
 		
 		//SolGame.views.drift.drawCircle(100,100,100);
 		

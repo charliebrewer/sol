@@ -221,7 +221,7 @@ module.exports = function() {
 			}
 		}
 		
-		return module.getCrd(pos.x, pos.y, 0, 0, 0);
+		return module.getCrd(pos.x, pos.y, 0, 0, Math.round(timeMs / 1000));
 	};
 	
 	module.getEscapeVelocity = function(parentMass, distanceFromParent) {

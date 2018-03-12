@@ -3,6 +3,7 @@ SolGame.models = {
 	COMMAND_GET_ALL_CLIENT_DATA : 100,
 	COMMAND_GET_ALL_DEFINITIONS_DATA : 101,
 	COMMAND_GET_ALL_PLAYER_DATA : 110,
+	COMMAND_PLOT_ROUTE : 310,
 	
 	/**
 	 * Central function to interact with the server. Call callback with a single parameter, output.
@@ -15,6 +16,8 @@ SolGame.models = {
 			callback(output.data);
 		});
 	},
+	
+	// Data retreival functions
 	
 	getPlayerAndDefinitionData : function(callback) {
 		// TODO
@@ -31,4 +34,10 @@ SolGame.models = {
 	getDefinitionsData : function(callback) {
 		SolGame.models.runCommand(SolGame.models.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, callback);
 	},
+	
+	// Update server functions
+	
+	plotRoute : function(data, callback) {
+		SolGame.models.runCommand(SolGame.models.COMMAND_PLOT_ROUTE, data, callback);
+	}
 };

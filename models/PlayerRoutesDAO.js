@@ -5,7 +5,7 @@ module.exports = function() {
 	
 	module.tableName = 'plr_routes';
 	module.keyName   = 'plr_id';
-	module.fields    = ['route_id', 'plr_id', 'destination_type', 'destination_id', 'min_x', 'max_x', 'min_y', 'max_y', 'time_end', 'route_data', 'flags'];
+	module.fields    = ['route_id', 'plr_id', 'plr_ship_id', 'destination_type', 'destination_id', 'min_x', 'max_x', 'min_y', 'max_y', 'time_end', 'route_data', 'flags'];
 	
 	module.getPlayerRoutes = function(plrId, callback) {
 		PersistentDataAccess().selectMany(module.tableName, module.keyName, plrId, function(playerRoutes) {
@@ -15,6 +15,10 @@ module.exports = function() {
 			
 			callback(playerRoutes);
 		});
+	};
+	
+	module.getPlayerRoute = function(routeId, callback) {
+		PersistentDataAccess().selectOne(module.tableName, 'route_id', routeId, callback);
 	};
 	
 	module.updatePlayerRoutes = function(playerRoute, callback) {

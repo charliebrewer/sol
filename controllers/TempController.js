@@ -27,7 +27,7 @@ module.exports = function() {
 			routeSegsSml.push(routeSegSml);
 		}
 		
-		var routeSml = NavigationMechanics().getRouteSml(1, 2, 12893798, routeSegsSml);
+		var routeSml = NavigationMechanics().getRouteSml(1, 1, 2, 12893798, routeSegsSml);
 		console.log(JSON.stringify(routeSml));
 		output.messages.push(routeSml);
 		

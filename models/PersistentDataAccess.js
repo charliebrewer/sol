@@ -41,6 +41,25 @@ module.exports = function() {
 		);
 	};
 	
+	module.selectOne = function(tableName, keyName, keyValue, callback) {
+		module.query(
+			sprintf("SELECT * FROM %s WHERE %s = '%s'",
+				tableName,
+				keyName,
+				SqlString.format(keyValue)
+			),
+			function(rows) {
+				if(rows.length != 1) {
+					// TODO log error
+					console.log(sprintf("Didn't get one row for: %s %s %s", tableName, keyName, keyValue));
+					callback({});
+				} else {
+					callback(rows.pop());
+				}
+			}
+		);
+	};
+	
 	/**
 	 * Function to update a single row in the db.
 	 * 

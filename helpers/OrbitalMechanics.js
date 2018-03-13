@@ -26,6 +26,21 @@ module.exports = function() {
 		return crd;
 	};
 	
+	module.crdsAreEqual = function(crdA, crdB, errorThreshold) {
+		if(Math.abs(crdA.pos.x - crdB.pos.x) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.pos.y - crdB.pos.y) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.mov.x - crdB.mov.x) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.mov.y - crdB.mov.y) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.t - crdB.t) > errorThreshold)
+			return false;
+			
+		return true;
+	};
+	
 	/**
 	 * Calculate the position of a given body assuming circular orbit.
 	 * Returns an array with two values, the first being X and the second being Y.

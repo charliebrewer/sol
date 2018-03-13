@@ -1,25 +1,18 @@
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
+var PlayerDAO = require('../models/PlayerDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
+var StationsDAO = require('../models/StationsDAO');
 
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 
+var PlayerController = require('../controllers/PlayerController');
 var ShipController = require('../controllers/ShipController');
 
 var Bezier = require('bezier-js');
 
 module.exports = function() {
 	var module = {};
-	
-	module.DESTINATION_TYPE_STATION   = 1; // ID is station ID
-	module.DESTINATION_TYPE_DRIFT     = 2; // ID is 0, not used
-	module.DESTINATION_TYPE_ORBIT     = 3; // ID is celestial_body_id
-	module.DESTINATION_TYPE_INTERCEPT = 4; // ID route ID
-	
-	module.LOCATION_TYPE_STATION  = 1;
-	module.LOCATION_TYPE_SHIP     = 2;
-	module.LOCATION_TYPE_SPACE    = 3;
-	module.LOCATION_TYPE_PROPERTY = 4;
 	
 	module.MIN_START_DELAY_SC = 5; // Minimum number of seconds in the future the player can start a new course
 	module.MAX_COURSE_DURATION_SEC = 10; // Maximum time allowed for a given course
@@ -28,7 +21,6 @@ module.exports = function() {
 	
 	/**
 	 * Method that validates a course.
-	 * TODO change inputOrig to input
 	 */
 	module.plotRoute = function(input, output, callback) {
 		/*
@@ -94,37 +86,98 @@ module.exports = function() {
 		
 		// Check to see that each curve links to the next
 		// Note we are dealing with "simple segments"
-		
 		var routeLrg = NavigationMechanics().getRouteLrg(input.data);
 		
-		CelestialBodiesDAO().getBodies(function(celestialBodies) {
-			ShipController().getShipMobility(routeLrg.plrShipId, function(shipMobility) {
-				if(false && !NavigationMechanics().validateRoute(shipMobility, routeLrg.routeSegments, celestialBodies)) {
-					output.messages.push("Route failed validation");
+		/*
+		check where the player is
+		check if the player owns the ship
+		check where the ship is
+		*/
+		var startTimeMs = routeLrg.routeSegs[0].sCrd.t * 1000;
+		
+		PlayerDAO().getPlayer(input.plrId, function(playerRecord) {
+			PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
+				var routeSmlArr = [];
+				playerRoutes.forEach(function(r) {
+					//getRouteSml = function(routeId, destinationType, destinationId, plrShipId, routeSegsSml) {
+					routeSmlArr.push(NavigationMechanics().getRouteSml(
+						r['route_id'],
+						r['destination_type'],
+						r['destination_id'],
+						r['plr_ship_id'],
+						r['route_data']
+					));
+				});
+					
+				var locationInfo = NavigationMechanics().getLocationAtTime(
+					playerRecord['location_type'],
+					playerRecord['location_id'],
+					startTimeMs,
+					routeSmlArr
+				);
+				
+				if(NavigationMechanics().LOCATION_TYPE_STATION != locationInfo.locationType) {
+					console.log("Only leaving from stations supported");
 					callback(output);
 					return;
-				}
-				
-				// TODO this is a hack to use our one route and update it
-				PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
-					var playerRoute = playerRoutes.pop();
-					if(undefined == playerRoute) {
-						output.messages.push('no player route');
-						callback(output);
-						return;
-					}
+				} else if(locationInfo.locationType == routeLrg.destionationType && locationInfo.locationId == routeLrg.destinationId) {
+					console.log("Can't travel back to the same station");
+					callback(output);
+					return;
+				} else {
+					// Before we check if the station is at the same crd as the route at the start time,
+					// we check information about the ship first
+					// TODO implement ships
+					// Check if the player owns the ship and if the ship is located at the same station
 					
-					playerRoute['destination_type'] = routeLrg.destinationType;
-					playerRoute['destination_id'] = routeLrg.destinationId;
-					playerRoute['time_end'] = routeLrg.timeEnd;
-					
-					// For the route itself we want to use the small version
-					playerRoute['route_data'] = input.data.rd;
-					
-					PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
-						callback(output);
+					CelestialBodiesDAO().getBodies(function(cBodies) {
+						StationsDAO().getStations(cBodies, function(stations) {
+							var station = stations.find(function(s) { return s['station_id'] == locationInfo.locationId; });
+							
+							var stationCrd = OrbitalMechanics().getStationCrd(station, startTimeMs, cBodies, true);
+							
+							if(!OrbitalMechanics().crdsAreEqual(routeLrg.routeSegs[0].sCrd, stationCrd, 10)) {
+								console.log("Trying to plot route that doesn't begin where we think it does");
+								callback(output);
+								return;
+							}
+							
+							ShipController().getShipMobility(routeLrg.plrShipId, function(shipMobility) {
+								if(false && !NavigationMechanics().validateRoute(shipMobility, routeLrg.routeSegments, celestialBodies)) {
+									console.log("Route failed validation");
+									callback(output);
+									return;
+								}
+								
+								// Success! The route passed validation and the player is where they say they are etc etc
+								// Store the info
+								
+								var playerRoute = playerRoutes.pop();
+								if(undefined == playerRoute) {
+									output.messages.push('no player route');
+									callback(output);
+									return;
+								}
+								
+								playerRoute['destination_type'] = routeLrg.destinationType;
+								playerRoute['destination_id'] = routeLrg.destinationId;
+								playerRoute['time_end'] = routeLrg.timeEnd;
+								
+								// For the route itself we want to use the small version
+								playerRoute['route_data'] = input.data.rd;
+								
+								PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
+									playerRecord['location_type'] = module.LOCATION_TYPE_ROUTE;
+									playerRecord['location_id'] = playerRoute['route_id'];
+									
+									PlayerDAO().updatePlayer(playerRecord, function(pOutput) {
+										callback(output);
+									});
+								});
+							});
+						});
 					});
-				});
+				}
 			});
 		});
 	};
@@ -195,26 +248,3 @@ module.exports = function() {
 	
 	return module;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

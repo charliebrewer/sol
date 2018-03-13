@@ -30,11 +30,11 @@
 	SolGame.app.start(function() {});
   });
   
-  var waitTime = 6;
+  var waitTimeMs = 6000;
   
   plotRouteISS = function() {
     var route = SolGame.NavigationController.plotRoute(
-	  (Date.now() / 1000) + waitTime,
+	  Date.now() + waitTimeMs,
 	  0,
 	  SolGame.NavigationController.DESTINATION_TYPE_STATION,
 	  1
@@ -45,7 +45,7 @@
   
   plotRouteSol = function() {
     var route = SolGame.NavigationController.plotRoute(
-	  (Date.now() / 1000) + waitTime,
+	  Date.now() + waitTimeMs,
 	  0,
 	  SolGame.NavigationController.DESTINATION_TYPE_STATION,
 	  2

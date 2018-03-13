@@ -1,18 +1,17 @@
 SolGame.NavigationController = {
+	DESTINATION_TYPE_UNKNOWN : 0,
 	DESTINATION_TYPE_STATION   : 1, // ID is station ID
-	DESTINATION_TYPE_DRIFT     : 2, // ID is 0, not used
+	DESTINATION_TYPE_ROUTE : 4, // ID route ID
 	DESTINATION_TYPE_ORBIT     : 3, // ID is celestial_body_id
-	DESTINATION_TYPE_INTERCEPT : 4, // ID route ID
 	
 	LOCATION_TYPE_STATION  : 1,
-	LOCATION_TYPE_SHIP     : 2,
-	LOCATION_TYPE_SPACE    : 3,
-	LOCATION_TYPE_PROPERTY : 4,
+	LOCATION_TYPE_ROUTE    : 2,
 	
-	MIN_START_DELAY_SC : 5, // Minimum seconds in the future that we are allowing for a course to start
+	MIN_START_DELAY_MS : 5000, // Minimum seconds in the future that we are allowing for a course to start
 	
-	plotRoute : function(startTimeSc, plrShipId, destinationType, destinationId) {
-		if(startTimeSc < (Date.now() / 1000) + SolGame.NavigationController.MIN_START_DELAY_SC) {
+	plotRoute : function(startTimeMs, plrShipId, destinationType, destinationId) {
+		startTimeMs = Math.round(startTimeMs / 1000) * 1000;
+		if(startTimeMs < Date.now() + SolGame.NavigationController.MIN_START_DELAY_MS) {
 			alert("Route starts too soon");
 			return {};
 		}
@@ -26,27 +25,34 @@ SolGame.NavigationController = {
 			return {};
 		}
 		
+		var locationInfo = SolGame.Shared.NavigationMechanics().getLocationAtTime(
+			SolGame.PlayerData.playerRecord['location_type'],
+			SolGame.PlayerData.playerRecord['location_id'],
+			startTimeMs,
+			SolGame.PlayerData.playerRoutes
+		);
+		
 		// Get the player's current position
 		var sCrd = SolGame.NavigationController.getCrdFromLocation(
-			startTimeSc * 1000,
-			SolGame.PlayerData.playerRecord['location_type'],
-			SolGame.PlayerData.playerRecord['location_id']
+			startTimeMs,
+			locationInfo.locationType,
+			locationInfo.locationId
 		);
 		
 		var sPosVec = new SolGame.Shared.Victor(sCrd.pos.x, sCrd.pos.y);
 		
 		// We are estimating the destination here, first at the start time
 		var eCrd = SolGame.NavigationController.getCrdFromLocation(
-			startTimeSc * 1000,
+			startTimeMs,
 			SolGame.NavigationController.DESTINATION_TYPE_STATION,
 			destinationId
 		);
 		
 		var distance = (new SolGame.Shared.Victor(sPosVec.x, sPosVec.y)).subtract(new SolGame.Shared.Victor(eCrd.pos.x, eCrd.pos.y)).magnitude();
-		var endTimeSc = Math.round(startTimeSc + (distance / shipThrust));
+		var endTimeMs = Math.round(startTimeMs + (1000 * (distance / shipThrust))); // Temp 1000 since converting from sc to ms and ships being unimplemented
 		
 		eCrd = SolGame.NavigationController.getCrdFromLocation(
-			endTimeSc * 1000,
+			endTimeMs,
 			SolGame.NavigationController.DESTINATION_TYPE_STATION,
 			destinationId
 		);
@@ -59,6 +65,7 @@ SolGame.NavigationController = {
 		);
 		
 		return SolGame.Shared.NavigationMechanics().getRouteSml(
+			0, // We don't care about route ID since that will be handled by the server
 			destinationType,
 			destinationId,
 			plrShipId,

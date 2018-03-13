@@ -11,6 +11,16 @@ var Victor = require('victor');
 module.exports = function() {
 	var module = {};
 	
+	module.DESTINATION_TYPE_UNKNOWN = 0;
+	module.DESTINATION_TYPE_STATION = 1; // ID is station ID
+	module.DESTINATION_TYPE_ROUTE   = 2; // ID route ID
+	module.DESTINATION_TYPE_ORBIT   = 3; // ID is celestial_body_id
+	
+	module.LOCATION_TYPE_UNKNOWN  = 0;
+	module.LOCATION_TYPE_STATION  = 1;
+	module.LOCATION_TYPE_ROUTE    = 2;
+	module.LOCATION_TYPE_DOCKING  = 3;
+	
 	module.MAX_ROUTE_SEGMENTS = 10;
 	module.MAX_ROUTE_TIME_SEC = 20;//1440;
 	module.MAX_ROUTE_SEG_TURN_DEG = 60;
@@ -68,9 +78,10 @@ module.exports = function() {
 		return routeSegLrg;
 	};
 	
-	module.getRouteSml = function(destinationType, destinationId, plrShipId, routeSegsSml) {
+	module.getRouteSml = function(routeId, destinationType, destinationId, plrShipId, routeSegsSml) {
 		var routeSml = {};
 		
+		routeSml.id = routeId;
 		routeSml.dt = destinationType;
 		routeSml.di = destinationId;
 		routeSml.ps = plrShipId;
@@ -82,6 +93,7 @@ module.exports = function() {
 	module.getRouteLrg = function(routeSml) {
 		var routeLrg = {};
 		
+		routeLrg.routeId         = routeSml.id;
 		routeLrg.destinationType = routeSml.dt;
 		routeLrg.destinationId   = routeSml.di;
 		routeLrg.plrShipId       = routeSml.ps;
@@ -113,7 +125,13 @@ module.exports = function() {
 			));
 		});
 		
-		return module.getRouteSml(routeLrg.destinationType, routeLrg.destinationId, routeLrg.plrShipId, routeSegsSml);
+		return module.getRouteSml(
+			routeLrg.routeId,
+			routeLrg.destinationType,
+			routeLrg.destinationId,
+			routeLrg.plrShipId,
+			routeSegsSml
+		);
 	};
 	
 	/**
@@ -137,6 +155,45 @@ module.exports = function() {
 		
 		var spdPos = curRouteSeg.spdCurve.get(pctComplete);
 		return curRouteSeg.posCurve.get(spdPos.y);
+	};
+	
+	/**
+	 * Function to determine the player's location type and location id at a
+	 * given time. Does not update any data, just parses the player's record
+	 * and route information and determines where the player currently is.
+	 *
+	 * Calls callback function with parameters locationType and locationId.
+	 */
+	module.getLocationAtTime = function(locationType, locationId, timeMs, routeSmlArr) {
+		var retLocation = {locationType : module.LOCATION_TYPE_UNKNOWN, locationId : 0};
+		
+		if(module.LOCATION_TYPE_STATION == locationType) {
+			// If we're on a station, we just return that
+			retLocation.locationType = module.LOCATION_TYPE_STATION;
+			retLocation.locationId = locationId;
+		} else if(module.LOCATION_TYPE_ROUTE == locationType) {
+			// We're on a route, need to check its state and return accordingly
+			var route = routeSmlArr.find(function(r) { return r.id == locationId; });
+			
+			if(route.rd[route.rd.length - 1].eCrd.t <= timeMs / 1000) {
+				// The route is over, we are at the destination
+				if(module.DESTINATION_TYPE_STATION == route.dt) {
+					retLocation.locationType = module.LOCATION_TYPE_STATION;
+					retLocation.locationId = route.di;
+				} else {
+					console.log("Non-station destination found, currently only stations supported.");
+				}
+			} else {
+				// We are on this route, either in docking or on the route itself
+				// TODO handle routes starting in the future and show the player as "DOCKING"
+				retLocation.locationType = module.LOCATION_TYPE_ROUTE;
+				retLocation.locationId = locationId;
+			}
+		} else {
+			console.log("Unknown player location type: " + playerRecord['location_type']);
+		}
+		
+		return retLocation;
 	};
 	
 	/**
@@ -419,6 +476,21 @@ module.exports = function() {
 		crd.t = timestamp;
 		
 		return crd;
+	};
+	
+	module.crdsAreEqual = function(crdA, crdB, errorThreshold) {
+		if(Math.abs(crdA.pos.x - crdB.pos.x) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.pos.y - crdB.pos.y) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.mov.x - crdB.mov.x) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.mov.y - crdB.mov.y) > errorThreshold)
+			return false;
+		if(Math.abs(crdA.t - crdB.t) > errorThreshold)
+			return false;
+			
+		return true;
 	};
 	
 	/**

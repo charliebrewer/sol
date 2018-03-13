@@ -32,6 +32,7 @@ module.exports = function() {
 						
 						for(let i = 0; i < playerRoutes.length; i++) {
 							pr.push(NavigationMechanics().getRouteSml(
+								playerRoutes[i]['route_id'],
 								playerRoutes[i]['destination_type'],
 								playerRoutes[i]['destination_id'],
 								0, // TODO add ship ID
@@ -78,7 +79,7 @@ module.exports = function() {
 				callback(credits);
 			});
 		});
-	}
+	};
 
 	return module;
 }

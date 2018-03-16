@@ -1,4 +1,5 @@
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
+var DefQuestsDAO = require('../models/DefQuestsDAO');
 var StationsDAO = require('../models/StationsDAO');
 
 module.exports = function() {
@@ -15,7 +16,11 @@ module.exports = function() {
 			StationsDAO().getStations(celestialBodies, function(stations) {
 				output.data.stations = stations;
 				
-				callback(output);
+				DefQuestsDAO().getQuests(function(defQuests) {
+					output.data.defQuests = defQuests;
+					
+					callback(output);
+				});
 			});
 		});
 	}

@@ -1,4 +1,5 @@
 var PlayerController = require('./PlayerController');
+var ShipController = require('./ShipController');
 
 module.exports = function() {
 	var module = {};
@@ -7,6 +8,7 @@ module.exports = function() {
 	module.ITEM_TYPE_BUCKET    = 1;
 	module.ITEM_TYPE_CREDITS   = 2;
 	module.ITEM_TYPE_SHIP      = 3;
+	module.ITEM_TYPE_COMMODITY = 4;
 	/*
 	COMMODITY
 	MODULE
@@ -45,7 +47,7 @@ module.exports = function() {
 		 * Calls back with an integer representing the amount of this item
 		 * that a player possesses.
 		 */
-		item.numPlayerHas = function(plrId, callback) {callback(0)};
+		item.getPlrQuantity = function(plrId, callback) {callback(0)};
 		
 		switch(itemType) {
 			case module.ITEM_TYPE_NOTHING:
@@ -53,7 +55,7 @@ module.exports = function() {
 				break;
 			
 			case module.ITEM_TYPE_BUCKET:
-				item.name = "Bucket"; // Should be name of bucket definition
+				item.name = "Bucket";
 				// TODO
 				break;
 			
@@ -66,7 +68,7 @@ module.exports = function() {
 					});
 				};
 				
-				item.numPlayerHas = function(plrId, callback) {
+				item.getPlrQuantity = function(plrId, callback) {
 					PlayerController().getPlayerRecord(plrId, function(playerRecord) {
 						callback(playerRecord['credits']);
 					});
@@ -75,8 +77,23 @@ module.exports = function() {
 				break;
 			
 			case module.ITEM_TYPE_SHIP:
-				item.name = "Ship"; // Should be name of the ship
+				item.name = "Ship";
 				// TODO
+				break;
+			
+			case module.ITEM_TYPE_COMMODITY:
+				item.name = "Commodity";
+				
+				item.giveToPlayer = function(plrId, callback) {
+					ShipController().modifyActiveShipCargo(plrId, item.itemType, item.itemId, item.quantity, function(success) {
+						callback([]); // TODO
+					});
+				};
+				
+				item.getPlrQuantity = function(plrId, callback) {
+					callback(1000); // TODO
+				};
+				
 				break;
 			
 			default:

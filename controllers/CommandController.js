@@ -2,6 +2,7 @@ var DataController = require('./DataController');
 var DefinitionsController = require('./DefinitionsController');
 var NavigationController = require('./NavigationController');
 var PlayerController = require('./PlayerController');
+var QuestController = require('./QuestController');
 var ShopController = require('./ShopController');
 var TempController = require('./TempController');
 
@@ -15,6 +16,8 @@ module.exports = function() {
 		110 : "PlayerController().getAllPlayerData",
 		//200 : "", // regular give an item to a player, admin action only
 		210 : "ShopController().activateShopItem",
+		220 : "QuestController().acceptQuest",
+		230 : "QuestController().arriveAtStation",
 		310 : "NavigationController().plotRoute"
 	};
 	

@@ -449,7 +449,7 @@ module.exports = function() {
 
 
 
-},{"./OrbitalMechanics":2,"bezier-js":3,"victor":7}],2:[function(require,module,exports){
+},{"./OrbitalMechanics":2,"bezier-js":4,"victor":8}],2:[function(require,module,exports){
 var Victor = require('victor');
 
 module.exports = function() {
@@ -698,10 +698,77 @@ module.exports = function() {
 	return module;
 };
 
-},{"victor":7}],3:[function(require,module,exports){
+},{"victor":8}],3:[function(require,module,exports){
+module.exports = function() {
+	var module = {};
+	
+	/**
+	 * Data structure for a generated quest instance.
+	 *
+	 * @param defQuestId The definition quest this instance was based off of
+	 * @param maxTimeSc The total time that the player has to complete this quest, not the real time but the delta
+	 */
+	module.getQuestInstance = function(defCommodityId, commodityQuantity, totalValue, maxTimeSc, destinationStationId) {
+		var quest = {};
+		
+		quest.defCommodityId = defCommodityId;
+		quest.commodityQuantity = commodityQuantity;
+		quest.totalValue = totalValue;
+		quest.maxTimeSc = maxTimeSc;
+		quest.destinationStationId = destinationStationId;
+		
+		return quest;
+	};
+	
+	/**
+	 * Function to take a quest definition and generate a questInstance data structure.
+	 */
+	module.generateQuestInstance = function(defQuest, defCommodities) {
+		var commodities = defCommodities.filter(e => e['commodity_type'] == defQuest['commodity_type']);
+		var commodity = commodities[Math.floor(Math.random() * commodities.length)];
+		
+		var cargoQuantity = Math.floor(Math.random() * (defQuest['max_cargo'] - defQuest['min_cargo'])) + defQuest['min_cargo'];
+		
+		var destStations = defQuest['destination_station_ids'].split(',');
+		var destStationId = destStations[Math.floor(Math.random() * destStations.length)];
+		
+		return module.getQuestInstance(
+			commodity['commodity_id'],
+			cargoQuantity,
+			cargoQuantity * defQuest['cargo_value'],
+			defQuest['max_time_sc'],
+			destStationId
+		);
+	};
+	
+	module.validateQuestInstance = function(defQuest, defCommodities, questInstance) {
+		if(questInstance.commodityQuantity > defQuest['max_cargo'])
+			return false;
+		if(questInstance.commodityQuantity < defQuest['min_cargo'])
+			return false;
+		if(questInstance.totalValue != defQuest['cargo_value'] * questInstance.commodityQuantity)
+			return false;
+		if(questInstance.maxTimeSc != defQuest['max_time_sc'])
+			return false;
+		
+		var commodities = defCommodities.filter(e => e['commodity_type'] == defQuest['commodity_type']);
+		if(undefined == commodities.find(e => e['commodity_id'] == questInstance.defCommodityId))
+			return false;
+		
+		var destStations = defQuest['destination_station_ids'].split(',');
+		if(undefined == destStations.find(e => e == questInstance.destinationStationId))
+			return false;
+		
+		return true;
+	};
+	
+	return module;
+};
+
+},{}],4:[function(require,module,exports){
 module.exports = require('./lib/bezier');
 
-},{"./lib/bezier":4}],4:[function(require,module,exports){
+},{"./lib/bezier":5}],5:[function(require,module,exports){
 /**
   A javascript Bezier curve library by Pomax.
 
@@ -1551,7 +1618,7 @@ module.exports = require('./lib/bezier');
 
 }());
 
-},{"./poly-bezier.js":5,"./utils.js":6}],5:[function(require,module,exports){
+},{"./poly-bezier.js":6,"./utils.js":7}],6:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -1609,7 +1676,7 @@ module.exports = require('./lib/bezier');
   module.exports = PolyBezier;
 }());
 
-},{"./utils.js":6}],6:[function(require,module,exports){
+},{"./utils.js":7}],7:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -2159,7 +2226,7 @@ module.exports = require('./lib/bezier');
   module.exports = utils;
 }());
 
-},{"./bezier":4}],7:[function(require,module,exports){
+},{"./bezier":5}],8:[function(require,module,exports){
 exports = module.exports = Victor;
 
 /**
@@ -3485,17 +3552,19 @@ function degrees2radian (deg) {
 	return deg / degrees;
 }
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 var victor = require('victor');
 
 var om = require('../../helpers/OrbitalMechanics');
 var nm = require('../../helpers/NavigationMechanics');
+var qm = require('../../helpers/QuestMechanics');
 
 SolGame.Shared = {
 	Victor : victor,
 	
 	OrbitalMechanics : om,
-	NavigationMechanics : nm
+	NavigationMechanics : nm,
+	QuestMechanics : qm
 };
 
-},{"../../helpers/NavigationMechanics":1,"../../helpers/OrbitalMechanics":2,"victor":7}]},{},[8]);
+},{"../../helpers/NavigationMechanics":1,"../../helpers/OrbitalMechanics":2,"../../helpers/QuestMechanics":3,"victor":8}]},{},[9]);

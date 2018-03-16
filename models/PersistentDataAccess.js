@@ -99,5 +99,27 @@ module.exports = function() {
 		}
 	};
 	
+	module.updateOrInsert = function(tableName, row, callback) {
+		var fieldNames = [];
+		var values = [];
+		var combined = [];
+		
+		for(var key in row) {
+			fieldNames.push(key);
+			values.push(row[key]);
+			combined.push(sprintf("%s=%s", key, row[key]));
+		}
+		
+		module.query(
+			sprintf("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+				tableName,
+				fieldNames.join(', '),
+				values.join(', '),
+				combined.join(', ')
+			),
+			callback
+		);
+	};
+	
 	return module;
 }

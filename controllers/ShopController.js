@@ -48,7 +48,7 @@ module.exports = function() {
 			);
 			
 			// TODO handle selling of items
-			inputItem.numPlayerHas(input.plrId, function(num) {
+			inputItem.getPlrQuantity(input.plrId, function(num) {
 				if(num < shopItemRecord['input_item_quantity']) {
 					output.messages.push("Not enough input items");
 					callback(output);

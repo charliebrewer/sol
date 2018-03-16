@@ -5,6 +5,7 @@ var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
 //var ItemController = require('./ItemController');
 var NavigationController = require('./NavigationController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
+var ShipMechanics = require('../helpers/ShipMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 var Bezier = require('bezier-js');
 
@@ -15,6 +16,23 @@ module.exports = function() {
 		input.plrId = 100000;
 		input.timeMs = Date.now();
 		output.messages = [];
+		
+		var shipCargo = {};
+		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 1, -10);
+		console.log(shipCargo);
+		/*
+		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 2, 2);
+		console.log(shipCargo);
+		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 1, -2);
+		console.log(shipCargo);
+		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 1, -8);
+		console.log(shipCargo);
+		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 2, -2);
+		console.log(shipCargo);
+		*/
+		
+		callback(output);
+		return;
 		
 		/*
 		module.getRouteSegSml = function(

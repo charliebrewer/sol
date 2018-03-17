@@ -9,16 +9,14 @@ var TempController = require('./TempController');
 module.exports = function() {
 	var module = {};
 	
-	var commandCodes = {
-		001 : "TempController().runTempFunction",
-		100 : "DataController().getAllClientData",
-		101 : "DefinitionsController().getAllDefinitionsData",
-		110 : "PlayerController().getAllPlayerData",
-		//200 : "", // regular give an item to a player, admin action only
-		210 : "ShopController().activateShopItem",
-		220 : "QuestController().acceptQuest",
-		230 : "QuestController().arriveAtStation",
-		310 : "NavigationController().plotRoute"
+	module.commandCodes = {
+		'100' : DataController().getAllClientData,
+		'101' : DefinitionsController().getAllDefinitionsData,
+		'110' : PlayerController().getAllPlayerData,
+		'210' : ShopController().activateShopItem,
+		'220' : QuestController().acceptQuest,
+		'230' : QuestController().arriveAtStation,
+		'310' : NavigationController().plotRoute
 	};
 	
 	/**
@@ -27,7 +25,9 @@ module.exports = function() {
 	 * @param output Object with response information
 	 */
 	module.runCommand = function(command, input, output, callback) {
-		if(!commandCodes[command]) {
+		command = parseInt(command).toString();
+		
+		if(!module.commandCodes[command]) {
 			// Invalid code
 			output.messages.push("Command (" + command + ") is an invalid command code.");
 			callback(output);
@@ -35,7 +35,7 @@ module.exports = function() {
 			output.messages.push("Input does not contain plrId, timeMs, or data.");
 			callback(output);
 		} else {
-			eval(commandCodes[command])(input, output, callback);
+			module.commandCodes[command](input, output, callback);
 		}
 	};
 	

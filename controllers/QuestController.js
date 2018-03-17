@@ -2,7 +2,7 @@ var DefCommoditiesDAO = require('../models/DefCommoditiesDAO');
 var DefQuestsDAO = require('../models/DefQuestsDAO');
 var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
 
-var ItemController = require('./ItemController');
+var ItemUtil = require('../utils/ItemUtil');
 
 var QuestMechanics = require('../helpers/QuestMechanics');
 
@@ -77,25 +77,25 @@ module.exports = function() {
 			
 			questsToComplete.forEach(function(quest) {
 				if(quest['start_time_sc'] + quest['max_time_sc'] > timeSc) {
-					var cargo = ItemController().getItem(
-						ItemController().ITEM_TYPE_COMMODITY,
+					var cargo = ItemUtil().getItem(
+						ItemUtil().ITEM_TYPE_COMMODITY,
 						quest['def_commodity_id'],
 						quest['commodity_quantity']
 					);
 					
-					cargo.getPlrQuantity(input.plrId, function(plrCargoQuantity) {
+					cargo.getPlrQuantity(input.plrId, input.timeMs, function(plrCargoQuantity) {
 						if(plrCargoQuantity >= quest['commodity_quantity']) {
 							// Success, the player has completed the mission under the required time and has all the items
 							cargo.quantity *= -1;
-							cargo.giveToPlayer(input.plrId, function() {});
+							cargo.giveToPlayer(input.plrId, input.timeMs, function() {});
 							
-							var reward = ItemController().getItem(
-								ItemController().ITEM_TYPE_CREDITS,
+							var reward = ItemUtil().getItem(
+								ItemUtil().ITEM_TYPE_CREDITS,
 								0,
 								quest['total_value']
 							);
 							
-							reward.giveToPlayer(input.plrId, function() {});
+							reward.giveToPlayer(input.plrId, input.timeMs, function() {});
 						}
 					});
 				}

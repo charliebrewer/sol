@@ -35,6 +35,7 @@ module.exports = function() {
 	};
 	
 	module.syncLocation = function(plrId, timeMs, callback) {
+		console.log('syncing');
 		PlayerDAO().getPlayer(plrId, function(plrRecord) {
 			PlayerRoutesDAO().getPlayerRoutes(plrId, function(plrRoutes) {
 				var routeSmlArr = [];
@@ -59,7 +60,11 @@ module.exports = function() {
 					plrRecord['location_type'] = plrLocation.locationType;
 					plrRecord['location_id']   = plrLocation.locationId;
 					
-					PlayerDAO().updatePlayer(plrRecord, function() {});
+					PlayerDAO().updatePlayer(plrRecord, function() {
+						callback();
+					});
+				} else {
+					callback();
 				}
 			});
 		});

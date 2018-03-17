@@ -55,8 +55,7 @@ module.exports = function() {
 			),
 			function(rows) {
 				if(rows.length != 1) {
-					// TODO log error
-					console.log(sprintf("Didn't get one row for: %s %s %s", tableName, keyName, keyValue));
+					Logger().log(Logger().NORMAL, (sprintf("Didn't get one row for: %s %s %s", tableName, keyName, keyValue)));
 					callback({});
 				} else {
 					callback(rows.pop());
@@ -75,7 +74,7 @@ module.exports = function() {
 	 */
 	module.updateOne = function(tableName, keyName, fields, updatedRow, callback) {
 		if(undefined == updatedRow[keyName]) {
-			console.log('No key value defined in update');
+			Logger().log(Logger().NORMAL, 'No key value defined in update');
 			callback({});
 			return;
 		}
@@ -111,8 +110,8 @@ module.exports = function() {
 		
 		for(var key in row) {
 			fieldNames.push(key);
-			values.push(row[key]);
-			combined.push(sprintf("%s=%s", key, row[key]));
+			values.push(sprintf("'%s'", row[key]));
+			combined.push(sprintf("%s='%s'", key, row[key]));
 		}
 		
 		module.query(

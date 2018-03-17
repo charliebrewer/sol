@@ -1,5 +1,6 @@
 var PlayerDAO = require('../models/PlayerDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
+var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 
@@ -42,9 +43,11 @@ module.exports = function() {
 						
 						output.data.playerRoutes = pr;
 						
-						// etc
-						
-						callback(output);
+						PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+							output.data.playerShips = plrShips;
+							
+							callback(output);
+						});
 					});
 				});
 			}

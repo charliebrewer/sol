@@ -1,5 +1,9 @@
-var PlayerController = require('./PlayerController');
-var ShipController = require('./ShipController');
+var PlayerShipsDAO = require('../models/PlayerShipsDAO');
+
+var PlayerController = require('../controllers/PlayerController');
+var ShipController = require('../controllers/ShipController');
+
+var ShipUtil = require('./ShipUtil');
 
 module.exports = function() {
 	var module = {};
@@ -41,13 +45,13 @@ module.exports = function() {
 		 *
 		 * Calls back with an array of items representing what was given to the player.
 		 */
-		item.giveToPlayer = function(plrId, callback) {callback([])};
+		item.giveToPlayer = function(plrId, timeMs, callback) {callback([])};
 		
 		/**
 		 * Calls back with an integer representing the amount of this item
 		 * that a player possesses.
 		 */
-		item.getPlrQuantity = function(plrId, callback) {callback(0)};
+		item.getPlrQuantity = function(plrId, timeMs, callback) {callback(0)};
 		
 		switch(itemType) {
 			case module.ITEM_TYPE_NOTHING:
@@ -62,13 +66,13 @@ module.exports = function() {
 			case module.ITEM_TYPE_CREDITS:
 				item.name = "Credits";
 				
-				item.giveToPlayer = function(plrId, callback) {
+				item.giveToPlayer = function(plrId, timeMs, callback) {
 					PlayerController().modifyPlayerCredits(plrId, this.quantity, true, function(creditDelta) {
 						callback([module.getItem(module.ITEM_TYPE_CREDITS, 0, creditDelta)]);
 					});
 				};
 				
-				item.getPlrQuantity = function(plrId, callback) {
+				item.getPlrQuantity = function(plrId, timeMs, callback) {
 					PlayerController().getPlayerRecord(plrId, function(playerRecord) {
 						callback(playerRecord['credits']);
 					});
@@ -78,19 +82,38 @@ module.exports = function() {
 			
 			case module.ITEM_TYPE_SHIP:
 				item.name = "Ship";
-				// TODO
+				
+				item.giveToPlayer = function(plrId, timeMs, callback) {
+					ShipUtil().modifyPlayerShips(plrId, item.itemId, item.quantity > 0, timeMs, function(res) {
+						if(res)
+							callback([this]);
+						else
+							callback([]);
+					});
+				};
+				
+				item.getPlrQuantity = function(plrId, timeMs, callback) {
+					PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+						var ship = plrShips.find(e => e['def_ship_id'] == item.itemId);
+						if(undefined == ship)
+							callback(0);
+						else
+							callback(1);
+					});
+				};
+				
 				break;
 			
 			case module.ITEM_TYPE_COMMODITY:
 				item.name = "Commodity";
 				
-				item.giveToPlayer = function(plrId, callback) {
-					ShipController().modifyActiveShipCargo(plrId, item.itemType, item.itemId, item.quantity, function(success) {
+				item.giveToPlayer = function(plrId, timeMs, callback) {
+					ShipUtil().modifyActiveShipCargo(plrId, item.itemType, item.itemId, item.quantity, function(success) {
 						callback([]); // TODO
 					});
 				};
 				
-				item.getPlrQuantity = function(plrId, callback) {
+				item.getPlrQuantity = function(plrId, timeMs, callback) {
 					callback(1000); // TODO
 				};
 				

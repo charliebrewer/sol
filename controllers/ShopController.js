@@ -1,5 +1,5 @@
 var DefShopItemsDAO = require('../models/DefShopItemsDAO');
-var ItemController = require('./ItemController');
+var ItemUtil = require('../utils/ItemUtil');
 
 module.exports = function() {
 	var module = {};
@@ -41,28 +41,28 @@ module.exports = function() {
 				return;
 			}
 			
-			var inputItem = ItemController().getItem(
+			var inputItem = ItemUtil().getItem(
 				shopItemRecord['input_item_type'],
 				shopItemRecord['input_item_id'],
 				shopItemRecord['input_item_quantity']
 			);
 			
 			// TODO handle selling of items
-			inputItem.getPlrQuantity(input.plrId, function(num) {
+			inputItem.getPlrQuantity(input.plrId, input.timeMs, function(num) {
 				if(num < shopItemRecord['input_item_quantity']) {
 					output.messages.push("Not enough input items");
 					callback(output);
 				} else {
 					inputItem.quantity *= -1;
 					
-					inputItem.giveToPlayer(input.plrId, function(itemDelta) {
-						var outputItem = ItemController().getItem(
+					inputItem.giveToPlayer(input.plrId, input.timeMs, function(itemDelta) {
+						var outputItem = ItemUtil().getItem(
 							shopItemRecord['output_item_type'],
 							shopItemRecord['output_item_id'],
 							shopItemRecord['output_item_quantity']
 						);
 						
-						outputItem.giveToPlayer(input.plrId, function(itemDelta) {
+						outputItem.giveToPlayer(input.plrId, timeMs, function(itemDelta) {
 							output.messages.push(itemDelta);
 							callback(output);
 						});

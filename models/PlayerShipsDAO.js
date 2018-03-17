@@ -5,6 +5,8 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
+	module.FLAG_SOLD = 1;
+	
 	module.tableName = 'plr_ships';
 	module.keyName   = 'plr_id';
 	module.fields    = [
@@ -23,7 +25,6 @@ module.exports = function() {
 		PersistentDataAccess().selectMany(module.tableName, module.keyName, plrId, function(plrShips) {
 			plrShips.forEach(function(ship) {
 				ship['loadout'] = JSON.parse(ship['loadout']);
-				ship['cargo'] = JSON.parse(ship['cargo']);
 			});
 			
 			callback(plrShips);
@@ -32,7 +33,6 @@ module.exports = function() {
 	
 	module.storePlayerShip = function(plrShip, callback) {
 		plrShip['loadout'] = JSON.stringify(plrShip['loadout']);
-		plrShip['cargo'] = JSON.stringify(plrShip['cargo']);
 		
 		PersistentDataAccess().updateOrInsert(module.tableName, plrShip, callback);
 	};

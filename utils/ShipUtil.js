@@ -69,7 +69,7 @@ module.exports = function() {
 				return;
 			}
 			
-			var cargo = module.createBucketFromString(activeShip['cargo']);
+			var cargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
 			
 			cargo.modifyContents(itemType, itemId, itemQuantity);
 			

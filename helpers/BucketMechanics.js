@@ -83,7 +83,7 @@ module.exports = function() {
 					return false;
 			}
 			
-			if(0 > bucket.items[itemType][itemId] + itemQuantity && !bucket.allowNegatives)
+			if(0 > (bucket.items[itemType][itemId] + itemQuantity) && !bucket.allowNegatives)
 				return false;
 			
 			bucket.items[itemType][itemId] += itemQuantity;
@@ -139,7 +139,7 @@ module.exports = function() {
 			});
 		};
 		
-		bucket.allowNegatives = function(allow) {
+		bucket.setAllowNegatives = function(allow) {
 			if(allow) {
 				bucket.allowNegatives = true;
 			} else {

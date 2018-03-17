@@ -2,6 +2,9 @@ var sprintf = require("sprintf-js").sprintf;
 var SqlString = require('sqlstring');
 
 var mysql = require('mysql');
+
+var Logger = require('../helpers/Logger');
+
 var pool = mysql.createPool({
 	connectionLimit : 10,
 	host            : 'localhost',
@@ -18,6 +21,8 @@ module.exports = function() {
 	};
 
 	module.query = function(queryStr, callback) {
+		Logger().log(Logger().DATABASE, queryStr);
+		
 		pool.query(queryStr, function (err, rows, fields) {
 			if (err) throw err;
 

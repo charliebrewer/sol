@@ -32,11 +32,8 @@ module.exports = function() {
 			// Invalid code
 			output.messages.push("Command (" + command + ") is an invalid command code.");
 			callback(output);
-		} else if(undefined == input.plrId || undefined == input.timeMs || undefined == input.data) {
-			output.messages.push("Input does not contain plrId, timeMs, or data.");
-			callback(output);
 		} else {
-			module.commandCodes[command](input, output, callback);
+			module.commandCodes[command](dataBox, input, output, callback);
 		}
 	};
 	

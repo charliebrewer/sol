@@ -42,10 +42,6 @@ router.post('/', function(req, res, next) {
 				error = false;
 				
 				// TODO populate player id, where does session validation go?
-				request.plrId = 100000;
-				request.timeMs = Date.now(); // Set time once for the whole request
-				request.clientVersion = 0;
-				
 				var dataBox = DataBox().getBox(100000, Date.now());
 				
 				// We set the output to success first, but it may be changed in the call
@@ -55,7 +51,7 @@ router.post('/', function(req, res, next) {
 				GameUtil().updateGameState(dataBox, function() {
 					
 					// Run the command
-					CommandController().runCommand(dataBox, command, request, output, function(result) {
+					CommandController().runCommand(dataBox, command, request.data, output, function(result) {
 						res.json(result);
 					});
 				});

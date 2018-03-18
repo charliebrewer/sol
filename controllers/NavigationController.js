@@ -22,7 +22,7 @@ module.exports = function() {
 	/**
 	 * Method that validates a course.
 	 */
-	module.plotRoute = function(input, output, callback) {
+	module.plotRoute = function(dataBox, input, output, callback) {
 		/*
 		TODO this entire function is now BS, we've moved validation to NaviationMechanics, this references the old segment styles, and was never tested
 		input is array of objects, starting coordinate, ending coordinate, bezier control vector
@@ -86,7 +86,7 @@ module.exports = function() {
 		
 		// Check to see that each curve links to the next
 		// Note we are dealing with "simple segments"
-		var routeLrg = NavigationMechanics().getRouteLrg(input.data);
+		var routeLrg = NavigationMechanics().getRouteLrg(input);
 		
 		/*
 		check where the player is
@@ -95,8 +95,8 @@ module.exports = function() {
 		*/
 		var startTimeMs = routeLrg.routeSegs[0].sCrd.t * 1000;
 		
-		PlayerDAO().getPlayer(input.plrId, function(playerRecord) {
-			PlayerRoutesDAO().getPlayerRoutes(input.plrId, function(playerRoutes) {
+		PlayerDAO().getPlayer(dataBox.getPlrId(), function(playerRecord) {
+			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(playerRoutes) {
 				var routeSmlArr = [];
 				playerRoutes.forEach(function(r) {
 					//getRouteSml = function(routeId, destinationType, destinationId, plrShipId, routeSegsSml) {
@@ -164,7 +164,7 @@ module.exports = function() {
 								playerRoute['time_end'] = routeLrg.timeEnd;
 								
 								// For the route itself we want to use the small version
-								playerRoute['route_data'] = input.data.rd;
+								playerRoute['route_data'] = input.rd;
 								
 								PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
 									playerRecord['location_type'] = module.LOCATION_TYPE_ROUTE;
@@ -182,68 +182,9 @@ module.exports = function() {
 		});
 	};
 	
-	module.plotOrbit = function(input, output, callback) {
+	module.plotOrbit = function(dataBox, input, output, callback) {
 		// TODO this will share functionality with plotCourse as the ship will need to navigate to the circular orbit
 		callback(output);
-	};
-	
-	// TODO - remove this function from the server - if the player wishes to drift through space, they'll just
-	// plot the course with their engines off and then call plotCourse with the associated curves
-	// What about disabled engines?
-	module.plotDrift = function(input, output, callback) {
-		/*
-		update the player's ship route to drifting through space
-		
-		we need the player's starting coordinate from which to drift, that's it
-		
-		verify the time of the coordinate is not too far in the future and is not in the past
-		verify the player is not already drifting
-		verify the player is in a ship
-		verify the player owns the ship they are on
-		verify the player will be at the coordinate
-		
-		*/
-		// TODO verify input contains a coordinate
-		var startCrd = input.startCrd;
-		if(startCrd.t < input.timeMs + module.MIN_START_DELAY_SC) {
-			output.messages.push("Course starts too soon.");
-			callback(output);
-			return;
-		}
-		
-		// TODO verify the above requirements
-		CelestialBodiesDAO().getBodies(function(celestialBodies) {
-			// Get only the relevant bodies
-			// TODO implement this
-			var cBodies = [];
-			celestialBodies.forEach(function(body) {
-				if(body['celestial_body_id'] == OrbitalMechanics().SOL_ID) {
-					cBodies.push(body);
-				}
-			});
-			
-			var driftCrds = [];
-			driftCrds.push(startCrd);
-			var previousCrd = startCrd;
-			
-			while(previousCrd.t <= startCrd.t + module.MAX_COURSE_DURATION_SEC) {
-				OrbitalMechanics().populateOrbitalPositions(cBodies, (1000 * previousCrd.t) + module.COURSE_RESOLUTION_MS);
-				
-				previousCrd = OrbitalMechanics().getDriftCoordinate(
-					previousCrd.pos,
-					previousCrd.mov,
-					previousCrd.t,
-					module.COURSE_RESOLUTION_MS / 1000,
-					cBodies
-				);
-				
-				driftCrds.push(previousCrd);
-			}
-			
-			// driftCrds now contains a list of coordinates
-			output.driftCrds = driftCrds;
-			callback(output);
-		});
 	};
 	
 	return module;

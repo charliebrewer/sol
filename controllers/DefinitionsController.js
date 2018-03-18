@@ -5,7 +5,7 @@ var StationsDAO = require('../models/StationsDAO');
 module.exports = function() {
 	var module = {};
 	
-	module.getAllDefinitionsData = function(input, output, callback) {
+	module.getAllDefinitionsData = function(dataBox, input, output, callback) {
 		// Get all definitions data for the client
 		output.data.celestialBodies = [];
 		output.data.stations = [];

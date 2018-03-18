@@ -13,8 +13,8 @@ module.exports = function() {
 	
 	module.MAX_ACTIVE_QUESTS = 10;
 	
-	module.acceptQuest = function(input, output, callback) {
-		if(undefined == input.data.defQuestId || undefined == input.data.questInstance) {
+	module.acceptQuest = function(dataBox, input, output, callback) {
+		if(undefined == input.defQuestId || undefined == input.questInstance) {
 			output.messages.push("Invalid input");
 			callback(output);
 			return;
@@ -22,22 +22,22 @@ module.exports = function() {
 		
 		DefQuestsDAO().getQuests(function(defQuests) {
 			DefCommoditiesDAO().getCommodities(function(defCommodities) {
-				var defQuest = defQuests.find(function(e) { return e['quest_id'] == input.data.defQuestId; });
+				var defQuest = defQuests.find(function(e) { return e['quest_id'] == input.defQuestId; });
 				
 				if(undefined == defQuest) {
-					output.messaes.push("Couldn't find quest: " + input.data.defQuestId);
+					output.messaes.push("Couldn't find quest: " + input.defQuestId);
 					callback(output);
 					return;
 				}
 				
-				if(!QuestMechanics().validateQuestInstance(defQuest, defCommodities, input.data.questInstance)) {
+				if(!QuestMechanics().validateQuestInstance(defQuest, defCommodities, input.questInstance)) {
 					output.messages.push("Invalid quest instance");
 					callback(output);
 					return;
 				}
 				
 				// See if their ship has room for the cargo
-				PlayerShipsDAO().getPlayerShips(input.plrId, function(plrShips) {
+				PlayerShipsDAO().getPlayerShips(dataBox.getPlrId(), function(plrShips) {
 					var activeShip = plrShips.find(e => 1 == e['is_active']);
 					
 					if(undefined == activeShip) {
@@ -48,7 +48,7 @@ module.exports = function() {
 					
 					var cargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
 					
-					if(ShipMechanics().getCargoCapacity(activeShip) < cargo.itemQuantitySum() + input.data.questInstance.commodityQuantity) {
+					if(ShipMechanics().getCargoCapacity(activeShip) < cargo.itemQuantitySum() + input.questInstance.commodityQuantity) {
 						output.messages.push("Not enough room in cargo");
 						callback(output);
 						return;
@@ -58,26 +58,26 @@ module.exports = function() {
 					
 					// Success, the player is accepting a valid quest, has enough room
 					
-					PlayerQuestsDAO().getPlayerQuests(input.plrId, function(plrQuests) {
+					PlayerQuestsDAO().getPlayerQuests(dataBox.getPlrId(), function(plrQuests) {
 						PlayerQuestsDAO().storePlrQuest(
 							plrQuests,
-							input.plrId,
-							input.data.questInstance.defCommodityId,
-							input.data.questInstance.commodityQuantity,
-							input.data.questInstance.totalValue,
-							Math.round(input.timeMs / 1000),
-							input.data.questInstance.maxTimeSc,
+							dataBox.getPlrId(),
+							input.questInstance.defCommodityId,
+							input.questInstance.commodityQuantity,
+							input.questInstance.totalValue,
+							Math.round(dataBox.getTimeMs() / 1000),
+							input.questInstance.maxTimeSc,
 							0,
-							input.data.questInstance.destinationStationId,
+							input.questInstance.destinationStationId,
 							0,
 							function(pqOutput) {
 								var commodity = ItemUtil().getItem(
 									ItemUtil().ITEM_TYPE_COMMODITY,
-									input.data.questInstance.defCommodityId,
-									input.data.questInstance.commodityQuantity
+									input.questInstance.defCommodityId,
+									input.questInstance.commodityQuantity
 								);
 								
-								commodity.giveToPlayer(input.plrId, input.timeMs, function(res) {
+								commodity.giveToPlayer(dataBox.getPlrId(), dataBox.getTimeMs(), function(res) {
 									callback(output);
 								});
 							}
@@ -88,10 +88,10 @@ module.exports = function() {
 		});
 	};
 	
-	module.arriveAtStation = function(input, output, callback) {
+	module.arriveAtStation = function(dataBox, input, output, callback) {
 		// Check if this player has any quests that are not complete and will be completed at this station
 		// Complete them
-		if(undefined == input.data.defStationId) {
+		if(undefined == input.defStationId) {
 			output.messages.push("Invalid input");
 			callback(output);
 			return;
@@ -99,13 +99,13 @@ module.exports = function() {
 		
 		// TODO ensure player is actually at this station
 		
-		var timeSc = Math.round(input.timeMs / 1000);
+		var timeSc = Math.round(dataBox.getTimeMs() / 1000);
 		
-		PlayerQuestsDAO().getPlayerQuests(input.plrId, function(plrQuests) {
-			var questsToComplete = plrQuests.filter(e => 0 == e['completed_time_sc'] && input.data.defStationId == e['destination_station_id']);
+		PlayerQuestsDAO().getPlayerQuests(dataBox.getPlrId(), function(plrQuests) {
+			var questsToComplete = plrQuests.filter(e => 0 == e['completed_time_sc'] && input.defStationId == e['destination_station_id']);
 			
 			if(questsToComplete.length > 0)
-				PlayerQuestsDAO().completeQuestsAtStation(input.plrId, input.data.defStationId, input.timeMs, function() {});
+				PlayerQuestsDAO().completeQuestsAtStation(dataBox.getPlrId(), input.defStationId, dataBox.getTimeMs(), function() {});
 			
 			questsToComplete.forEach(function(quest) {
 				if(quest['start_time_sc'] + quest['max_time_sc'] > timeSc) {
@@ -115,11 +115,11 @@ module.exports = function() {
 						quest['commodity_quantity']
 					);
 					
-					cargo.getPlrQuantity(input.plrId, input.timeMs, function(plrCargoQuantity) {
+					cargo.getPlrQuantity(dataBox.getPlrId(), dataBox.getTimeMs(), function(plrCargoQuantity) {
 						if(plrCargoQuantity >= quest['commodity_quantity']) {
 							// Success, the player has completed the mission under the required time and has all the items
 							cargo.quantity *= -1;
-							cargo.giveToPlayer(input.plrId, input.timeMs, function() {});
+							cargo.giveToPlayer(dataBox.getPlrId(), dataBox.getTimeMs(), function() {});
 							
 							var reward = ItemUtil().getItem(
 								ItemUtil().ITEM_TYPE_CREDITS,
@@ -127,7 +127,7 @@ module.exports = function() {
 								quest['total_value']
 							);
 							
-							reward.giveToPlayer(input.plrId, input.timeMs, function() {});
+							reward.giveToPlayer(dataBox.getPlrId(), dataBox.getTimeMs(), function() {});
 						}
 					});
 				}

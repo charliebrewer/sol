@@ -2,20 +2,30 @@ var PersistentDataAccess = require('../models/PersistentDataAccess');
 //var PlayerDAO = require('../models/PlayerDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
+var DefBucketItemsDAO = require('../models/DefBucketItemsDAO');
 //var ItemController = require('./ItemController');
 var NavigationController = require('./NavigationController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 var ShipMechanics = require('../helpers/ShipMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 var Bezier = require('bezier-js');
+var DataBox = require('../helpers/DataBox');
 
 module.exports = function() {
 	var module = {};
 
-	module.runTempFunction = function(input, output, callback) {
-		input.plrId = 100000;
-		input.timeMs = Date.now();
-		output.messages = [];
+	module.runTempFunction = function(dataBox, input, output, callback) {
+		console.log(dataBox.data);
+		DefBucketItemsDAO().getBucketItems(dataBox, 1, function(bucketItems) {
+			console.log(dataBox.data);
+			
+			DefBucketItemsDAO().getBucketItems(dataBox, 1, function(bucketItems) {
+				console.log(dataBox.data);
+			});
+		});
+		
+		callback(output);
+		return;
 		
 		var shipCargo = {};
 		shipCargo = ShipMechanics().modifyShipCargo(shipCargo, 1, 1, -10);
@@ -31,8 +41,7 @@ module.exports = function() {
 		console.log(shipCargo);
 		*/
 		
-		callback(output);
-		return;
+		
 		
 		/*
 		module.getRouteSegSml = function(

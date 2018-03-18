@@ -1,10 +1,12 @@
 var DefCommoditiesDAO = require('../models/DefCommoditiesDAO');
 var DefQuestsDAO = require('../models/DefQuestsDAO');
 var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
+var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var ItemUtil = require('../utils/ItemUtil');
 
 var QuestMechanics = require('../helpers/QuestMechanics');
+var ShipMechanics = require('../helpers/ShipMechanics');
 
 module.exports = function() {
 	var module = {};
@@ -34,23 +36,53 @@ module.exports = function() {
 					return;
 				}
 				
-				PlayerQuestsDAO().getPlayerQuests(input.plrId, function(plrQuests) {
-					PlayerQuestsDAO().storePlrQuest(
-						plrQuests,
-						input.plrId,
-						input.data.questInstance.defCommodityId,
-						input.data.questInstance.commodityQuantity,
-						input.data.questInstance.totalValue,
-						Math.round(input.timeMs / 1000),
-						input.data.questInstance.maxTimeSc,
-						0,
-						input.data.questInstance.destinationStationId,
-						0,
-						function(pqOutput) {
-							// TODO give the player the cargo to deliver
-							callback(output);
-						}
-					);
+				// See if their ship has room for the cargo
+				PlayerShipsDAO().getPlayerShips(input.plrId, function(plrShips) {
+					var activeShip = plrShips.find(e => 1 == e['is_active']);
+					
+					if(undefined == activeShip) {
+						output.messaes.push("No active ship right now");
+						callback(output);
+						return;
+					}
+					
+					var cargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
+					
+					if(ShipMechanics().getCargoCapacity(activeShip) < cargo.itemQuantitySum() + input.data.questInstance.commodityQuantity) {
+						output.messages.push("Not enough room in cargo");
+						callback(output);
+						return;
+					}
+					
+					// TODO verify the player is at the correct location
+					
+					// Success, the player is accepting a valid quest, has enough room
+					
+					PlayerQuestsDAO().getPlayerQuests(input.plrId, function(plrQuests) {
+						PlayerQuestsDAO().storePlrQuest(
+							plrQuests,
+							input.plrId,
+							input.data.questInstance.defCommodityId,
+							input.data.questInstance.commodityQuantity,
+							input.data.questInstance.totalValue,
+							Math.round(input.timeMs / 1000),
+							input.data.questInstance.maxTimeSc,
+							0,
+							input.data.questInstance.destinationStationId,
+							0,
+							function(pqOutput) {
+								var commodity = ItemUtil().getItem(
+									ItemUtil().ITEM_TYPE_COMMODITY,
+									input.data.questInstance.defCommodityId,
+									input.data.questInstance.commodityQuantity
+								);
+								
+								commodity.giveToPlayer(input.plrId, input.timeMs, function(res) {
+									callback(output);
+								});
+							}
+						);
+					});
 				});
 			});
 		});

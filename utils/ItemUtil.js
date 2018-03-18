@@ -5,9 +5,14 @@ var ShipController = require('../controllers/ShipController');
 
 var ShipUtil = require('./ShipUtil');
 
+var BucketMechanics = require('../helpers/BucketMechanics');
+
+var Logger = require('../helpers/Logger');
+
 module.exports = function() {
 	var module = {};
 	
+	// TODO remove this, it has been moved to BucketMechanics
 	module.ITEM_TYPE_NOTHING   = 0;
 	module.ITEM_TYPE_BUCKET    = 1;
 	module.ITEM_TYPE_CREDITS   = 2;
@@ -94,7 +99,7 @@ module.exports = function() {
 				
 				item.getPlrQuantity = function(plrId, timeMs, callback) {
 					PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
-						var ship = plrShips.find(e => e['def_ship_id'] == item.itemId);
+						var ship = plrShips.find(e => e['def_ship_id'] == item.itemId && 0 == (e['flags'] & PlayerShipsDAO().FLAG_SOLD));
 						if(undefined == ship)
 							callback(0);
 						else
@@ -114,7 +119,17 @@ module.exports = function() {
 				};
 				
 				item.getPlrQuantity = function(plrId, timeMs, callback) {
-					callback(1000); // TODO
+					PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+						var activeShip = plrShips.find(e => 1 == e['is_active']);
+						
+						if(undefined == activeShip) {
+							callback(0);
+							return;
+						}
+						
+						var shipCargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
+						callback(shipCargo.getItemQuantity(item.itemType, item.itemId));
+					});
 				};
 				
 				break;
@@ -129,12 +144,29 @@ module.exports = function() {
 	};
 	
 	/**
-	 * Function to determine the contents of a bucket. Parses and collates
+	 * Function to take a bucket and ensure it contains no child buckets.
+	 * Each child bucket found will have its contents added to the base bucket.
 	 * bucket contents so that it will not contain any further buckets.
 	 */
-	module.getBucketContents = function(bucketId, callback) {
-		// TODO
-		callback([]);
+	module.flatenBucket = function(bucket, callback) {
+		var seenBuckets = [];
+		
+		bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+			if(BucketMechanics().ITEM_TYPE_BUCKET == itemType) {
+				if(seenBuckets.includes(itemId)) {
+					Logger().log(Logger().NORMAL, "Bucket " + bucket.id + " is trying to include bucket " + itemId + " twice");
+					return;
+				}
+				
+				if(0 != itemId)
+					seenBuckets.push(itemId);
+				
+				// TODO get bucket info from DefBucketDAO
+				//bucket.addBucketContents(otherBucket);
+			}
+		});
+		
+		callback(bucket);
 	};
 	
 	return module;

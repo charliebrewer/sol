@@ -1,6 +1,12 @@
 module.exports = function() {
 	var module = {};
 	
+	module.ITEM_TYPE_NOTHING   = 0;
+	module.ITEM_TYPE_BUCKET    = 1;
+	module.ITEM_TYPE_CREDITS   = 2;
+	module.ITEM_TYPE_SHIP      = 3;
+	module.ITEM_TYPE_COMMODITY = 4;
+	
 	module.createBucketFromDef = function(defBucket, defBucketItems) {
 		var bucket = module.createEmptyBucket();
 		
@@ -94,6 +100,12 @@ module.exports = function() {
 			return true;
 		};
 		
+		bucket.addBucketContents = function(otherBucket) {
+			otherBucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				bucket.modifiyContents(itemType, itemId, itemQuantity);
+			});
+		};
+		
 		/**
 		 * Removes ALL of a given item from this bucket.
 		 *
@@ -117,7 +129,7 @@ module.exports = function() {
 			return retVal;
 		};
 		
-		bucket.itemQuantity = function(itemType, itemId) {
+		bucket.getItemQuantity = function(itemType, itemId) {
 			if(undefined != bucket.items[itemType]) {
 				if(undefined != bucket.items[itemType][itemId]) {
 					return bucket.items[itemType][itemId];
@@ -153,8 +165,29 @@ module.exports = function() {
 				
 				bucket.allowNegatives = false;
 			}
-		}
+		};
 		
+		/**
+		 * Sums the quantities of all items or just the items that have a type
+		 * which is contained in the itemTypeArr parameter.
+		 */
+		bucket.itemQuantitySum = function(itemTypeArr = null) {
+			var sum = 0;
+			
+			bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				if(null == itemTypeArr || itemTypeArr.includes(itemType))
+					sum += itemQuantity;
+			});
+			
+			return sum;
+		};
+		
+		/**
+		 * Function to generate the JSON object associated with this bucket's
+		 * contents. Does not encapsulate the other properties of the bucket.
+		 * The output of this function should be what is passed into the
+		 * createBucketFromString constructor.
+		 */
 		bucket.getItemsString = function() {
 			return JSON.stringify(bucket.items);
 		};

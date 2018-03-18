@@ -4,6 +4,7 @@ var SqlString = require('sqlstring');
 var mysql = require('mysql');
 
 var Logger = require('../helpers/Logger');
+var DataBox = require('../helpers/DataBox');
 
 var pool = mysql.createPool({
 	connectionLimit : 10,
@@ -16,10 +17,95 @@ var pool = mysql.createPool({
 module.exports = function() {
 	var module = {};
 	
-	module.getCacheKey = function(tableName, key) {
-		return sprintf("%s_%s", tableName, key);
+	module.SET_TYPE_ONE = 1;
+	module.SET_TYPE_MANY = 2;
+	module.SET_TYPE_ALL = 3;
+	
+	module.getDataKey = function(generic, specific) {
+		// TODO run some tests so we aren't accepting empty keys for example
+		return sprintf("%s_%s", generic, specific);
 	};
-
+	
+	/**
+	 * The primary way that other DAO files access their data.
+	 *
+	 * @param specificId The specific ID to be used in the data set. Note that
+	 *        this should be set even when selecting all data for cache key purposes.
+	 */
+	module.getData = function(dataBox, params, specificId, callback) {
+		var dataKey = module.getDataKey(params.tableName, specificId);
+		
+		if(dataBox.hasData(dataKey)) {
+			callback(dataBox.getData(dataKey));
+			return;
+		}
+		
+		// TODO check cache
+		
+		switch(params.setType) {
+			case module.SET_TYPE_ONE:
+				module.selectOne(params.tableName, params.keyName, specificId, function(output) {
+					module.cacheData(dataBox, params, specificId, output);
+					callback(output);
+				});
+				break;
+				
+			case module.SET_TYPE_MANY:
+				module.selectMany(params.tableName, params.keyName, specificId, function(output) {
+					module.cacheData(dataBox, params, specificId, output);
+					callback(output);
+				});
+				break;
+				
+			case module.SET_TYPE_ALL:
+				module.selectAll(params.tableName, function(output) {
+					module.cacheData(dataBox, params, specificId, output);
+					callback(output);
+				});
+				break;
+				
+			default:
+				Logger().log(Logger().NORMAL, sprintf("Unrecognized set type %s", params.setType));
+		}
+	};
+	
+	/**
+	 * The primary way that DAO files create and update data. This function
+	 * utilizes a INSERT ON DUPLICATE KEY UPDATE statement, so if the primary
+	 * key in the table is present in the row, the data will be updated instead.
+	 */
+	module.setData = function(dataBox, params, row, callback) {
+		if(!row.includes(params.keyName)) {
+			Logger().log(Logger().NORMAL, "Setting data but keyName is not present in row");
+			callback();
+			return;
+		}
+		
+		module.clearCache(dataBox, params, row[params.keyName]);
+		
+		module.updateOrInsert(params.tableName, row, callback);
+	};
+	
+	module.cacheData = function(dataBox, params, specificId, data) {
+		var dataKey = module.getDataKey(params.tableName, specificId);
+		
+		if(params.useDataBox) {
+			dataBox.setData(dataKey, data);
+		}
+		
+		if(0 < params.cacheTimeoutSc) {
+			// TODO
+		}
+	};
+	
+	module.clearCache = function(dataBox, params, specificId) {
+		var dataKey = module.getDataKey(params.tableName, specificId);
+		
+		dataBox.clrData(dataKey);
+		
+		// TODO cache
+	};
+	
 	module.query = function(queryStr, callback) {
 		Logger().log(Logger().DATABASE, queryStr);
 		
@@ -35,7 +121,6 @@ module.exports = function() {
 	};
 	
 	module.selectMany = function(tableName, keyName, keyValue, callback) {
-		// TODO check cache first
 		module.query(
 			sprintf("SELECT * FROM %s WHERE %s = '%s'",
 				tableName,
@@ -66,6 +151,8 @@ module.exports = function() {
 	
 	/**
 	 * Function to update a single row in the db.
+	 *
+	 * TODO remove this function, it is deprecated
 	 * 
 	 * @param tableName The name of the table to update.
 	 * @param keyName The name of the key to be used in the WHERE statement. Must be present in updatedRow, value must be integer.

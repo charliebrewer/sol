@@ -34,10 +34,9 @@ module.exports = function() {
 		});
 	};
 	
-	module.syncLocation = function(plrId, timeMs, callback) {
-		console.log('syncing');
-		PlayerDAO().getPlayer(plrId, function(plrRecord) {
-			PlayerRoutesDAO().getPlayerRoutes(plrId, function(plrRoutes) {
+	module.syncLocation = function(dataBox, callback) {
+		PlayerDAO().getPlayer(dataBox.getPlrId(), function(plrRecord) {
+			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(plrRoutes) {
 				var routeSmlArr = [];
 				plrRoutes.forEach(function(r) {
 					routeSmlArr.push(NavigationMechanics().getRouteSml(
@@ -52,7 +51,7 @@ module.exports = function() {
 				var plrLocation = NavigationMechanics().getLocationAtTime(
 					plrRecord['location_type'],
 					plrRecord['location_id'],
-					timeMs,
+					dataBox.getTimeMs(),
 					routeSmlArr
 				);
 				

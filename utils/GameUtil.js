@@ -7,22 +7,22 @@ module.exports = function() {
 		PlayerUtil().syncLocation
 	];
 	
-	module.updateGameState = function(plrId, timeMs, callback) {
+	module.updateGameState = function(dataBox, callback) {
 		if(0 == module.updateFunctions.length) {
 			callback();
 			return;
 		}
 		
-		module.runUpdateFunction(plrId, timeMs, 0, callback);
+		module.runUpdateFunction(dataBox, 0, callback);
 	};
 	
-	module.runUpdateFunction = function(plrId, timeMs, ufIndex, callback) {
+	module.runUpdateFunction = function(dataBox, ufIndex, callback) {
 		if(module.updateFunctions.length == ufIndex) {
 			callback();
 		} else {
-			module.updateFunctions[ufIndex](plrId, timeMs, function() {
+			module.updateFunctions[ufIndex](dataBox, function() {
 				ufIndex++;
-				module.runUpdateFunction(plrId, timeMs, ufIndex, callback);
+				module.runUpdateFunction(dataBox, ufIndex, callback);
 			});
 		}
 	};

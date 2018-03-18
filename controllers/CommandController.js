@@ -10,13 +10,14 @@ module.exports = function() {
 	var module = {};
 	
 	module.commandCodes = {
-		'100' : DataController().getAllClientData,
-		'101' : DefinitionsController().getAllDefinitionsData,
-		'110' : PlayerController().getAllPlayerData,
-		'210' : ShopController().activateShopItem,
-		'220' : QuestController().acceptQuest,
-		'230' : QuestController().arriveAtStation,
-		'310' : NavigationController().plotRoute
+		001 : TempController().runTempFunction,
+		100 : DataController().getAllClientData,
+		101 : DefinitionsController().getAllDefinitionsData,
+		110 : PlayerController().getAllPlayerData,
+		210 : ShopController().activateShopItem,
+		220 : QuestController().acceptQuest,
+		230 : QuestController().arriveAtStation,
+		310 : NavigationController().plotRoute
 	};
 	
 	/**
@@ -24,7 +25,7 @@ module.exports = function() {
 	 * @param input Object containing data to be passed to the corresponding function
 	 * @param output Object with response information
 	 */
-	module.runCommand = function(command, input, output, callback) {
+	module.runCommand = function(dataBox, command, input, output, callback) {
 		command = parseInt(command).toString();
 		
 		if(!module.commandCodes[command]) {

@@ -5,6 +5,8 @@ var CommandController = require('../controllers/CommandController');
 
 var GameUtil = require('../utils/GameUtil');
 
+var DataBox = require('../helpers/DataBox');
+
 var RESPONSE_SUCCESS = 0;
 var RESPONSE_FAILURE = 1;
 
@@ -44,14 +46,16 @@ router.post('/', function(req, res, next) {
 				request.timeMs = Date.now(); // Set time once for the whole request
 				request.clientVersion = 0;
 				
+				var dataBox = DataBox().getBox(100000, Date.now());
+				
 				// We set the output to success first, but it may be changed in the call
 				output.responseCode = RESPONSE_SUCCESS;
 				
 				// Before we run any commands, we update the game state for this player
-				GameUtil().updateGameState(request.plrId, request.timeMs, function() {
+				GameUtil().updateGameState(dataBox, function() {
 					
 					// Run the command
-					CommandController().runCommand(command, request, output, function(result) {
+					CommandController().runCommand(dataBox, command, request, output, function(result) {
 						res.json(result);
 					});
 				});

@@ -14,13 +14,13 @@ module.exports = function() {
 	 *
 	 * @return bool If the player's ship inventory was modified.
 	 */
-	module.modifyPlayerShips = function(dataBox, defShipId, giveNotTake, timeMs, callback) {
+	module.modifyPlayerShips = function(dataBox, defShipId, giveNotTake, callback) {
 		PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 			var ship = plrShips.find(e => e['def_ship_id'] == defShipId);
 			
 			if(undefined == ship) {
 				if(!giveNotTake) {
-					Logger().log(Logger().NORMAL, "Trying to take ship " + defShipId + " from player " + plrId + " but they don't have it");
+					Logger().log(Logger().NORMAL, "Trying to take ship " + defShipId + " from player " + dataBox.getPlrId() + " but they don't have it");
 					callback(false);
 					return;
 				}
@@ -28,11 +28,11 @@ module.exports = function() {
 				var ship = PlayerShipsDAO().newRow(dataBox.getPlrId(), defShipId, plrShips);
 			} else { // Ship is defined
 				if(giveNotTake && 0 == (ship['flags'] && PlayerShipsDAO().FLAG_SOLD)) {
-					Logger().log(Logger().NORMAL, "Trying to give ship " + defShipId + " to player " + plrId + " but they already have it");
+					Logger().log(Logger().NORMAL, "Trying to give ship " + defShipId + " to player " + dataBox.getPlrId() + " but they already have it");
 					callback(false);
 					return;
 				} else if(!giveNotTake && 0 != (ship['flags'] && PlayerShipsDAO().FLAG_SOLD)) {
-					Logger().log(Logger().NORMAL, "Trying to take ship " + defShipId + " from player " + plrId + " but it has been sold");
+					Logger().log(Logger().NORMAL, "Trying to take ship " + defShipId + " from player " + dataBox.getPlrId() + " but it has been sold");
 					callback(false);
 					return;
 				}

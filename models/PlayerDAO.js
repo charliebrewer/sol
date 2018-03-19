@@ -7,20 +7,19 @@ module.exports = function() {
 	module.keyName   = 'plr_id';
 	module.fields    = ['plr_id', 'acct_id', 'name', 'credits', 'location_type', 'location_id', 'flags'];
 	
-	module.getPlayer = function(plrId, callback) {
-		PersistentDataAccess().selectMany(module.tableName, module.keyName, plrId, function(playerRecords) {
-			var playerRecord = playerRecords.pop();
-			
-			if(undefined == playerRecord) {
-				console.log('Could not find player ' + plrId);
-				callback({});
-			} else {
-				callback(playerRecord);
-			}
-		});
+	module.params = {
+		tableName      : 'plr_players',
+		keyName        : 'plr_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_ONE
 	};
 	
-	module.updatePlayer = function(playerRecord, callback) {
+	module.getPlayer = function(dataBox, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, dataBox.getPlrId(), callback);
+	};
+	
+	module.updatePlayer = function(dataBox, playerRecord, callback) {
 		PersistentDataAccess().updateOne(module.tableName, module.keyName, module.fields, playerRecord, function(output) {
 			callback(output);
 		});

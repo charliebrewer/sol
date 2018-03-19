@@ -1,9 +1,11 @@
 var DefBucketItemsDAO = require('../models/DefBucketItemsDAO');
+var PlayerDAO = require('../models/PlayerDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var PlayerController = require('../controllers/PlayerController');
 var ShipController = require('../controllers/ShipController');
 
+var PlayerUtil = require('./PlayerUtil');
 var ShipUtil = require('./ShipUtil');
 
 var BucketMechanics = require('../helpers/BucketMechanics');
@@ -92,7 +94,7 @@ module.exports = function() {
 				item.name = "Credits";
 				
 				item.giveToPlayer = function(dataBox, callback) {
-					PlayerController().modifyPlayerCredits(plrId, item.quantity, true, function(creditDelta) {
+					PlayerUtil().modifyPlayerCredits(dataBox, item.quantity, true, function(creditDelta) {
 						var itemsGiven = BucketMechanics().createEmptyBucket();
 						itemsGiven.setAllowNegatives(true);
 						
@@ -103,7 +105,7 @@ module.exports = function() {
 				};
 				
 				item.getPlrQuantity = function(dataBox, callback) {
-					PlayerController().getPlayerRecord(plrId, function(playerRecord) {
+					PlayerDAO().getPlayer(dataBox, function(playerRecord) {
 						callback(playerRecord['credits']);
 					});
 				};
@@ -119,7 +121,7 @@ module.exports = function() {
 					item.quantity = -1;
 				
 				item.giveToPlayer = function(dataBox, callback) {
-					ShipUtil().modifyPlayerShips(dataBox, item.itemId, item.quantity > 0, timeMs, function(res) {
+					ShipUtil().modifyPlayerShips(dataBox, item.itemId, item.quantity > 0, function(res) {
 						var itemsGiven = BucketMechanics().createEmptyBucket();
 						itemsGiven.setAllowNegatives(true);
 						
@@ -152,7 +154,10 @@ module.exports = function() {
 					bucketToAdd.modifyContents(item.itemType, item.itemId, item.quantity);
 					
 					ShipUtil().modifyActiveShipCargo(dataBox, bucketToAdd, function(success) {
-						callback(bucketToAdd);
+						if(success)
+							callback(bucketToAdd);
+						else
+							callback(BucketMechanics().createEmptyBucket());
 					});
 				};
 				
@@ -234,7 +239,7 @@ module.exports = function() {
 	
 	module.giveBucketToPlayer = function(dataBox, bucket, callback) {
 		module.flattenBucket(dataBox, bucket, function(flatBucket) {
-			var sum = flatBucket.getQuantitySum();
+			var sum = flatBucket.itemQuantitySum();
 			
 			flatBucket.forEachItem(function(itemType, itemId, itemQuantity) {
 				module.getItem(itemType, itemId, itemQuantity).giveToPlayer(dataBox, function() {

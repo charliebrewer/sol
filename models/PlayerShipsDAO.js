@@ -58,7 +58,7 @@ module.exports = function() {
 	};
 	
 	module.setActiveShip = function(dataBox, activePlrShipId, callback) {
-		PersistentDataAccess().clearCache(dataBox, params, dataBox.getPlrId());
+		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
 		
 		var queryStr = sprintf(
 			"UPDATE %s SET is_active = IF(plr_ship_id = %i, 1, 0) WHERE plr_id = %i",

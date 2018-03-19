@@ -95,7 +95,7 @@ module.exports = function() {
 		*/
 		var startTimeMs = routeLrg.routeSegs[0].sCrd.t * 1000;
 		
-		PlayerDAO().getPlayer(dataBox.getPlrId(), function(playerRecord) {
+		PlayerDAO().getPlayer(dataBox, function(playerRecord) {
 			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(playerRoutes) {
 				var routeSmlArr = [];
 				playerRoutes.forEach(function(r) {
@@ -170,7 +170,7 @@ module.exports = function() {
 									playerRecord['location_type'] = module.LOCATION_TYPE_ROUTE;
 									playerRecord['location_id'] = playerRoute['route_id'];
 									
-									PlayerDAO().updatePlayer(playerRecord, function(pOutput) {
+									PlayerDAO().updatePlayer(dataBox, playerRecord, function(pOutput) {
 										callback(output);
 									});
 								});

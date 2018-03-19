@@ -13,29 +13,18 @@ module.exports = function() {
 	 *
 	 * Calls callback with the amount of credits added / removed from the player's account.
 	 */
-	module.modifyPlayerCredits = function(plrId, credits, allowDebt, callback) {
+	module.modifyPlayerCredits = function(dataBox, credits, allowDebt, callback) {
 		credits = parseInt(credits);
 		if(!credits) {
 			callback(0);
 			return;
 		}
 		
-		PlayerDAO().getPlayer(plrId, function(playerRecord) {
-			if(!allowDebt && 0 > credits && 0 > playerRecord['credits'] + credits) {
-				callback(0);
-				return;
-			}
-			
-			playerRecord['credits'] += credits;
-			
-			PlayerDAO().updatePlayer(playerRecord, function() {
-				callback(credits);
-			});
-		});
+		PlayerDAO().modifyCredits(dataBox, credits, callback);
 	};
 	
 	module.syncLocation = function(dataBox, callback) {
-		PlayerDAO().getPlayer(dataBox.getPlrId(), function(plrRecord) {
+		PlayerDAO().getPlayer(dataBox, function(plrRecord) {
 			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(plrRoutes) {
 				var routeSmlArr = [];
 				plrRoutes.forEach(function(r) {
@@ -59,7 +48,7 @@ module.exports = function() {
 					plrRecord['location_type'] = plrLocation.locationType;
 					plrRecord['location_id']   = plrLocation.locationId;
 					
-					PlayerDAO().updatePlayer(plrRecord, function() {
+					PlayerDAO().updatePlayer(dataBox, plrRecord, function() {
 						callback();
 					});
 				} else {

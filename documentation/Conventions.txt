@@ -18,7 +18,7 @@ While in game, the client makes calls to /runCommand. Here, the client posts a J
 
 The command property is used in CommandController.js to determine if the command is valid and what function to run.
 
-All Controller functions exposed in CommandController have the function signature of function(input, output, callback), and should call callback when done with the output as the only parameter.
+All Controller functions exposed in CommandController have the function signature of function(dataBox, input, output, callback), and should call callback when done with the output as the only parameter.
 
 The input parameter contains arbitrary data depending on the request specifics, but will also always contain plrId and timeMs where plrId is the ID of the authenticated player making the request, and timeMs is the time at which the request was made. The time attribute should be used for any time calculations on the server instead of additional calls to Date.now().
 

@@ -14,8 +14,8 @@ module.exports = function() {
 	 *
 	 * @return bool If the player's ship inventory was modified.
 	 */
-	module.modifyPlayerShips = function(plrId, defShipId, giveNotTake, timeMs, callback) {
-		PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+	module.modifyPlayerShips = function(dataBox, defShipId, giveNotTake, timeMs, callback) {
+		PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 			var ship = plrShips.find(e => e['def_ship_id'] == defShipId);
 			
 			if(undefined == ship) {
@@ -25,7 +25,7 @@ module.exports = function() {
 					return;
 				}
 				
-				var ship = {};
+				var ship = PlayerShipsDAO().newRow(dataBox.getPlrId(), defShipId, plrShips);
 			} else { // Ship is defined
 				if(giveNotTake && 0 == (ship['flags'] && PlayerShipsDAO().FLAG_SOLD)) {
 					Logger().log(Logger().NORMAL, "Trying to give ship " + defShipId + " to player " + plrId + " but they already have it");
@@ -38,29 +38,17 @@ module.exports = function() {
 				}
 			}
 			
-			ship['plr_id'] = plrId;
-			ship['def_ship_id'] = defShipId;
-			ship['loadout'] = {};
-			ship['cargo'] = '{}';
-			ship['location_type'] = NavigationMechanics().LOCATION_TYPE_UNKNOWN;
-			ship['location_id'] = 0;
-			ship['is_active'] = 0;
-			
-			if(giveNotTake)
-				ship['flags'] = 0;
-			else if(undefined != ship['flags'])
+			if(!giveNotTake)
 				ship['flags'] = ship['flags'] | PlayerShipsDAO().FLAG_SOLD;
-			else
-				ship['flags'] = PlayerShipsDAO().FLAG_SOLD;
 			
-			PlayerShipsDAO().storePlayerShip(ship, function(res) {
+			PlayerShipsDAO().storePlayerShip(dataBox, ship, function(res) {
 				callback(true);
 			});
 		});
 	};
 	
-	module.modifyActiveShipCargo = function(plrId, itemType, itemId, itemQuantity, callback) {
-		PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+	module.modifyActiveShipCargo = function(dataBox, bucketToAdd, callback) {
+		PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 			var activeShip = plrShips.find(e => 1 == e['is_active']);
 			
 			if(undefined == activeShip) {
@@ -71,11 +59,11 @@ module.exports = function() {
 			
 			var cargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
 			
-			cargo.modifyContents(itemType, itemId, itemQuantity);
+			cargo.addBucketContents(bucketToAdd);
 			
 			activeShip['cargo'] = cargo.getItemsString();
 			
-			PlayerShipsDAO().storePlayerShip(activeShip, function() {
+			PlayerShipsDAO().storePlayerShip(dataBox, activeShip, function() {
 				callback(true);
 			});
 		});

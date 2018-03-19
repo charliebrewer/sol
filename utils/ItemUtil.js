@@ -1,3 +1,4 @@
+var DefBucketItemsDAO = require('../models/DefBucketItemsDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var PlayerController = require('../controllers/PlayerController');
@@ -48,15 +49,15 @@ module.exports = function() {
 		/**
 		 * Gives this item to player plrId.
 		 *
-		 * Calls back with an array of items representing what was given to the player.
+		 * Calls back with a bucket of items that were given to the player.
 		 */
-		item.giveToPlayer = function(plrId, timeMs, callback) {callback([])};
+		item.giveToPlayer = function(dataBox, callback) {callback(BucketMechanics().createEmptyBucket())};
 		
 		/**
 		 * Calls back with an integer representing the amount of this item
 		 * that a player possesses.
 		 */
-		item.getPlrQuantity = function(plrId, timeMs, callback) {callback(0)};
+		item.getPlrQuantity = function(dataBox, callback) {callback(0)};
 		
 		switch(itemType) {
 			case module.ITEM_TYPE_NOTHING:
@@ -65,19 +66,43 @@ module.exports = function() {
 			
 			case module.ITEM_TYPE_BUCKET:
 				item.name = "Bucket";
-				// TODO
+				
+				item.giveToPlayer = function(dataBox, callback) {
+					DefBucketItemsDAO().getBucketItems(dataBox, item.itemId, function(defBucketItems) {
+						// TODO temp hack while def buckets hasn't been set up
+						var defBucket = {'bucket_id':item.itemId, 'name':'Bucket'};
+						
+						var bucket = BucketMechanics().createBucketFromDef(defBucket, defBucketItems);
+						
+						module.giveBucketToPlayer(dataBox, bucket, function(flatBucket) {
+							callback(flatBucket);
+						});
+					});
+				};
+				
+				item.getPlrQuantity = function(dataBox, callback) {
+					Logger().log(Logger().NORMAL, "Trying to get quantity of a bucket that the player has");
+					Logger().log(Logger().NORMAL, console.trace());
+					callback(0);
+				};
+				
 				break;
 			
 			case module.ITEM_TYPE_CREDITS:
 				item.name = "Credits";
 				
-				item.giveToPlayer = function(plrId, timeMs, callback) {
-					PlayerController().modifyPlayerCredits(plrId, this.quantity, true, function(creditDelta) {
-						callback([module.getItem(module.ITEM_TYPE_CREDITS, 0, creditDelta)]);
+				item.giveToPlayer = function(dataBox, callback) {
+					PlayerController().modifyPlayerCredits(plrId, item.quantity, true, function(creditDelta) {
+						var itemsGiven = BucketMechanics().createEmptyBucket();
+						itemsGiven.setAllowNegatives(true);
+						
+						itemsGiven.modifyContents(BucketMechanics().ITEM_TYPE_CREDITS, 0, creditDelta);
+						
+						callback(itemsGiven);
 					});
 				};
 				
-				item.getPlrQuantity = function(plrId, timeMs, callback) {
+				item.getPlrQuantity = function(dataBox, callback) {
 					PlayerController().getPlayerRecord(plrId, function(playerRecord) {
 						callback(playerRecord['credits']);
 					});
@@ -88,17 +113,25 @@ module.exports = function() {
 			case module.ITEM_TYPE_SHIP:
 				item.name = "Ship";
 				
-				item.giveToPlayer = function(plrId, timeMs, callback) {
-					ShipUtil().modifyPlayerShips(plrId, item.itemId, item.quantity > 0, timeMs, function(res) {
+				if(item.quantity > 0)
+					item.quantity = 1;
+				else
+					item.quantity = -1;
+				
+				item.giveToPlayer = function(dataBox, callback) {
+					ShipUtil().modifyPlayerShips(dataBox, item.itemId, item.quantity > 0, timeMs, function(res) {
+						var itemsGiven = BucketMechanics().createEmptyBucket();
+						itemsGiven.setAllowNegatives(true);
+						
 						if(res)
-							callback([this]);
-						else
-							callback([]);
+							itemsGiven.modifyContents(BucketMechanics().ITEM_TYPE_SHIP, item.itemId, item.quantity);
+						
+						callback(itemsGiven);
 					});
 				};
 				
-				item.getPlrQuantity = function(plrId, timeMs, callback) {
-					PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+				item.getPlrQuantity = function(dataBox, callback) {
+					PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 						var ship = plrShips.find(e => e['def_ship_id'] == item.itemId && 0 == (e['flags'] & PlayerShipsDAO().FLAG_SOLD));
 						if(undefined == ship)
 							callback(0);
@@ -112,14 +145,19 @@ module.exports = function() {
 			case module.ITEM_TYPE_COMMODITY:
 				item.name = "Commodity";
 				
-				item.giveToPlayer = function(plrId, timeMs, callback) {
-					ShipUtil().modifyActiveShipCargo(plrId, item.itemType, item.itemId, item.quantity, function(success) {
-						callback([]); // TODO
+				item.giveToPlayer = function(dataBox, callback) {
+					var bucketToAdd = BucketMechanics().createEmptyBucket();
+					bucketToAdd.setAllowNegatives(true);
+					
+					bucketToAdd.modifyContents(item.itemType, item.itemId, item.quantity);
+					
+					ShipUtil().modifyActiveShipCargo(dataBox, bucketToAdd, function(success) {
+						callback(bucketToAdd);
 					});
 				};
 				
-				item.getPlrQuantity = function(plrId, timeMs, callback) {
-					PlayerShipsDAO().getPlayerShips(plrId, function(plrShips) {
+				item.getPlrQuantity = function(dataBox, callback) {
+					PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 						var activeShip = plrShips.find(e => 1 == e['is_active']);
 						
 						if(undefined == activeShip) {
@@ -136,7 +174,7 @@ module.exports = function() {
 			
 			default:
 				// TODO throw err
-				console.log("Item type " + itemType + " not recognized");
+				Logger().log(Logger().NORMAL, "Item type " + itemType + " not recognized");
 				break;
 		}
 		
@@ -147,26 +185,66 @@ module.exports = function() {
 	 * Function to take a bucket and ensure it contains no child buckets.
 	 * Each child bucket found will have its contents added to the base bucket.
 	 * bucket contents so that it will not contain any further buckets.
+	 *
+	 * Warning - this function will fail if you have bucket that contains a loop
+	 * such as a bucket containing itself. Don't do that.
 	 */
-	module.flatenBucket = function(bucket, callback) {
+	module.flattenBucket = function(dataBox, bucket, callback) {
 		var seenBuckets = [];
 		
+		// Gather all bucket IDs into an array
 		bucket.forEachItem(function(itemType, itemId, itemQuantity) {
 			if(BucketMechanics().ITEM_TYPE_BUCKET == itemType) {
-				if(seenBuckets.includes(itemId)) {
-					Logger().log(Logger().NORMAL, "Bucket " + bucket.id + " is trying to include bucket " + itemId + " twice");
-					return;
-				}
-				
-				if(0 != itemId)
+				for(let i = 0; i < itemQuantity; i++) {
 					seenBuckets.push(itemId);
-				
-				// TODO get bucket info from DefBucketDAO
-				//bucket.addBucketContents(otherBucket);
+				}
 			}
 		});
 		
-		callback(bucket);
+		// If we didn't find any buckets just return
+		if(0 == seenBuckets.length) {
+			callback(bucket);
+			return;
+		}
+		
+		var bucketsAdded = 0;
+		
+		// Remove all the buckets we gathered from the parent bucket
+		seenBuckets.forEach(function(bucketId) {
+			bucket.removeItem(BucketMechanics().ITEM_TYPE_BUCKET, bucketId);
+		});
+		
+		// Add the bucket contents to our parent bucket
+		seenBuckets.forEach(function(bucketId) {
+			DefBucketItemsDAO().getBucketItems(dataBox, bucketId, function(defBucketItems) {
+				// TODO temp hack while def buckets hasn't been set up
+				var defBucket = {'bucket_id':itemId, 'name':'Bucket'};
+				
+				bucket.addBucketContents(BucketMechanics().createBucketFromDef(defBucket, defBucketItems));
+				
+				bucketsAdded++;
+				
+				if(bucketsAdded == seenBuckets.length) {
+					// We try to flatten the bucket again in case any of the buckets we just added contain a bucket
+					module.flattenBucket(dataBox, bucket, callback);
+				}
+			});
+		});
+	};
+	
+	module.giveBucketToPlayer = function(dataBox, bucket, callback) {
+		module.flattenBucket(dataBox, bucket, function(flatBucket) {
+			var sum = flatBucket.getQuantitySum();
+			
+			flatBucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				module.getItem(itemType, itemId, itemQuantity).giveToPlayer(dataBox, function() {
+					sum -= itemQuantity;
+					
+					if(0 == sum)
+						callback(flatBucket);
+				});
+			});
+		});
 	};
 	
 	return module;

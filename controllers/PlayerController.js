@@ -33,7 +33,7 @@ module.exports = function() {
 				
 				output.data.playerRoutes = pr;
 				
-				PlayerShipsDAO().getPlayerShips(dataBox, dataBox.getPlrId(), function(plrShips) {
+				PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 					output.data.playerShips = plrShips;
 					
 					callback(output);

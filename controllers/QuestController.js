@@ -37,7 +37,7 @@ module.exports = function() {
 				}
 				
 				// See if their ship has room for the cargo
-				PlayerShipsDAO().getPlayerShips(dataBox.getPlrId(), function(plrShips) {
+				PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 					var activeShip = plrShips.find(e => 1 == e['is_active']);
 					
 					if(undefined == activeShip) {
@@ -115,7 +115,7 @@ module.exports = function() {
 						quest['commodity_quantity']
 					);
 					
-					cargo.getPlrQuantity(dataBox.getPlrId(), dataBox.getTimeMs(), function(plrCargoQuantity) {
+					cargo.getPlrQuantity(dataBox, function(plrCargoQuantity) {
 						if(plrCargoQuantity >= quest['commodity_quantity']) {
 							// Success, the player has completed the mission under the required time and has all the items
 							cargo.quantity *= -1;

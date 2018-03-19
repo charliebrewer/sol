@@ -48,21 +48,21 @@ module.exports = function() {
 			);
 			
 			// TODO handle selling of items
-			inputItem.getPlrQuantity(dataBox.getPlrId(), dataBox.getTimeMs(), function(num) {
+			inputItem.getPlrQuantity(dataBox, function(num) {
 				if(num < shopItemRecord['input_item_quantity']) {
 					output.messages.push("Not enough input items");
 					callback(output);
 				} else {
 					inputItem.quantity *= -1;
 					
-					inputItem.giveToPlayer(dataBox.getPlrId(), dataBox.getTimeMs(), function(itemDelta) {
+					inputItem.giveToPlayer(dataBox, function(itemDelta) {
 						var outputItem = ItemUtil().getItem(
 							shopItemRecord['output_item_type'],
 							shopItemRecord['output_item_id'],
 							shopItemRecord['output_item_quantity']
 						);
 						
-						outputItem.giveToPlayer(dataBox.getPlrId(), dataBox.getTimeMs(), function(itemDelta) {
+						outputItem.giveToPlayer(dataBox, function(itemDelta) {
 							output.messages.push(itemDelta);
 							callback(output);
 						});

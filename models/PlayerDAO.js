@@ -26,5 +26,9 @@ module.exports = function() {
 		});
 	};
 	
+	module.modifyCredits = function(dataBox, creditDelta, callback) {
+		PersistentDataAccess().updateByDelta(module.tableName, module.keyName, dataBox.getPlrId(), 'credits', creditDelta, callback);
+	};
+	
 	return module;
 };

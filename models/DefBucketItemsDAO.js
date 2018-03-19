@@ -8,8 +8,7 @@ module.exports = function() {
 		keyName        : 'bucket_id',
 		useDataBox     : true,
 		cacheTimeoutSc : 0,
-		setType        : PersistentDataAccess().SET_TYPE_MANY,
-		fields         : []
+		setType        : PersistentDataAccess().SET_TYPE_MANY
 	};
 	
 	module.getBucketItems = function(dataBox, bucketId, callback) {

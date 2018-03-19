@@ -212,5 +212,14 @@ module.exports = function() {
 		);
 	};
 	
+	module.updateByDelta = function(tableName, pkName, pkValue, fieldName, delta, callback) {
+		var query = sprintf(
+			"UPDATE %s SET %s = %s + %i WHERE %s = %s LIMIT 1",
+			tableName, fieldName, fieldName, delta, pkName, pkValue
+		);
+		
+		module.query(query, callback);
+	};
+	
 	return module;
 }

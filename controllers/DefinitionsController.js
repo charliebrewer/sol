@@ -16,7 +16,7 @@ module.exports = function() {
 			StationsDAO().getStations(celestialBodies, function(stations) {
 				output.data.stations = stations;
 				
-				DefQuestsDAO().getQuests(function(defQuests) {
+				DefQuestsDAO().getQuests(dataBox, function(defQuests) {
 					output.data.defQuests = defQuests;
 					
 					callback(output);

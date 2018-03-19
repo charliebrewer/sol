@@ -16,13 +16,7 @@ module.exports = function() {
 	};
 	
 	module.getPlayerShips = function(dataBox, callback) {
-		PersistentDataAccess().getData(dataBox, module.params, dataBox.getPlrId(), function(plrShips) {
-			plrShips.forEach(function(ship) {
-				ship['loadout'] = JSON.parse(ship['loadout']);
-			});
-			
-			callback(plrShips);
-		});
+		PersistentDataAccess().getData(dataBox, module.params, dataBox.getPlrId(), callback);
 	};
 	
 	/**
@@ -52,8 +46,6 @@ module.exports = function() {
 	};
 	
 	module.storePlayerShip = function(dataBox, plrShip, callback) {
-		plrShip['loadout'] = JSON.stringify(plrShip['loadout']);
-		
 		PersistentDataAccess().setData(dataBox, module.params, plrShip, callback);
 	};
 	

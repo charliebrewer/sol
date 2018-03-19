@@ -3,23 +3,16 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'def_quests';
-	module.keyName   = 'quest_id';
-	module.fields    = [
-		'quest_id',
-		'station_id',
-		'commodity_type',
-		'min_reputation',
-		'cargo_value',
-		'min_cargo',
-		'max_cargo',
-		'max_time',
-		'destination_station_ids',
-		'flags'
-	];
+	module.params = {
+		tableName      : 'def_quests',
+		keyName        : 'quest_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_ALL
+	};
 	
-	module.getQuests = function(callback) {
-		PersistentDataAccess().selectAll(module.tableName, callback);
+	module.getQuests = function(dataBox, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, 0, callback);
 	};
 	
 	return module;

@@ -5,74 +5,67 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'plr_quests';
-	module.keyName   = 'plr_id';
-	module.fields    = [
-		'plr_quest_id',
-		'plr_id',
-		'def_commodity_id',
-		'commodity_quantity',
-		'total_value',
-		'start_time_sc',
-		'max_time_sc',
-		'completed_time_sc',
-		'destination_station_id',
-		'flags'
-	];
-	
-	module.getPlayerQuests = function(plrId, callback) {
-		PersistentDataAccess().selectMany(module.tableName, module.keyName, plrId, callback);
+	module.params = {
+		tableName      : 'plr_quests',
+		keyName        : 'plr_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_MANY
 	};
 	
-	module.storePlrQuest = function(
-		plrQuests,
+	module.getPlayerQuests = function(dataBox, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, dataBox.getPlrId(), callback);
+	};
+	
+	module.newRow = function(
 		plrId,
 		defCommodityId,
 		commodityQuantity,
 		totalValue,
 		startTimeSc,
 		maxTimeSc,
-		completedTimeSc,
 		destinationStationId,
-		flags,
-		callback
+		plrQuests = []
 	) {
-		var row = {
-			'plr_id' : plrId,
-			'def_commodity_id' : defCommodityId,
-			'commodity_quantity' : commodityQuantity,
-			'total_value' : totalValue,
-			'start_time_sc' : startTimeSc,
-			'max_time_sc' : maxTimeSc,
-			'completed_time_sc' : completedTimeSc,
-			'destination_station_id' : destinationStationId,
-			'flags' : flags
-		};
+		var row = {};
 		
-		var oldQuest = plrQuests.find(e => module.canRecycleRecord(e));
+		row.plr_id                 = plrId;
+		row.def_commodity_id       = defCommodityId;
+		row.commodity_quantity     = commodityQuantity;
+		row.total_value            = totalValue;
+		row.start_time_sc          = startTimeSc;
+		row.max_time_sc            = maxTimeSc;
+		row.destination_station_id = destinationStationId;
+		
+		row.completed_time_sc      = 0;
+		row.flags                  = 0;
+		
+		var oldQuest = plrQuests.find(e => 0 != e['completed_time_sc']);
 		if(undefined != oldQuest) {
-			row['plr_quest_id'] = oldQuest['plr_quest_id'];
+			row.plr_quest_id = oldQuest['plr_quest_id'];
 		}
 		
-		PersistentDataAccess().updateOrInsert(module.tableName, row, callback);
+		return row;
 	};
 	
-	module.completeQuestsAtStation = function(plrId, defStationId, timeMs, callback) {
-		var timeSc = Math.round(timeMs / 1000);
+	module.storePlrQuest = function(dataBox, plrQuest, callback) {
+		PersistentDataAccess().setData(dataBox, module.params, plrQuest, callback);
+	};
+	
+	module.completeQuestsAtStation = function(dataBox, defStationId, callback) {
+		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
+		
+		var timeSc = Math.round(dataBox.getTimeMs() / 1000);
 		
 		var queryStr = sprintf(
 			"UPDATE %s SET completed_time_sc = %i WHERE plr_id = %i AND destination_station_id = %i",
-			module.tableName,
+			module.params.tableName,
 			timeSc,
-			plrId,
+			dataBox.getPlrId(),
 			defStationId
 		);
 		
 		PersistentDataAccess().query(queryStr, callback);
-	};
-	
-	module.canRecycleRecord = function(plrQuest) {
-		return 0 != plrQuest['completed_time_sc'];
 	};
 	
 	return module;

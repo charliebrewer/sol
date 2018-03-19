@@ -102,7 +102,7 @@ module.exports = function() {
 		
 		bucket.addBucketContents = function(otherBucket) {
 			otherBucket.forEachItem(function(itemType, itemId, itemQuantity) {
-				bucket.modifiyContents(itemType, itemId, itemQuantity);
+				bucket.modifyContents(itemType, itemId, itemQuantity);
 			});
 		};
 		

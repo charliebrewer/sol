@@ -75,7 +75,7 @@ module.exports = function() {
 	 * key in the table is present in the row, the data will be updated instead.
 	 */
 	module.setData = function(dataBox, params, row, callback) {
-		if(!row.includes(params.keyName)) {
+		if(undefined == row[params.keyName]) {
 			Logger().log(Logger().NORMAL, "Setting data but keyName is not present in row");
 			callback();
 			return;

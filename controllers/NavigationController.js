@@ -161,13 +161,13 @@ module.exports = function() {
 								
 								playerRoute['destination_type'] = routeLrg.destinationType;
 								playerRoute['destination_id'] = routeLrg.destinationId;
-								playerRoute['time_end'] = routeLrg.timeEnd;
+								playerRoute['time_end'] = routeLrg.routeSegs[routeLrg.routeSegs.length - 1].eCrd.t;
 								
 								// For the route itself we want to use the small version
 								playerRoute['route_data'] = input.rd;
-								
+								console.log(playerRoute);
 								PlayerRoutesDAO().updatePlayerRoutes(dataBox, playerRoute, function(prOutput) {
-									playerRecord['location_type'] = module.LOCATION_TYPE_ROUTE;
+									playerRecord['location_type'] = NavigationMechanics().LOCATION_TYPE_ROUTE;
 									playerRecord['location_id'] = playerRoute['route_id'];
 									
 									PlayerDAO().updatePlayer(dataBox, playerRecord, function(pOutput) {

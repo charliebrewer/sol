@@ -20,7 +20,7 @@ module.exports = function() {
 	};
 	
 	module.updatePlayer = function(dataBox, playerRecord, callback) {
-		PersistentDataAccess().setData(dataBox, params, playerRecord, callback);
+		PersistentDataAccess().setData(dataBox, module.params, playerRecord, callback);
 	};
 	
 	module.modifyCredits = function(dataBox, creditDelta, callback) {

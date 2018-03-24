@@ -33,7 +33,7 @@ module.exports = function() {
 						r['destination_type'],
 						r['destination_id'],
 						r['plr_ship_id'],
-						r['route_data']
+						JSON.parse(r['route_data'])
 					));
 				});
 				

@@ -6,7 +6,7 @@ router.get('/', function(req, res, next) {
 	// Having this page populate the nav bar functionality is bad, should
 	// just wire up the template with the desired client side functions
 	res.locals = { title: 'Sol', mapOnclick : 'alert("hey");' };
-	res.render('clientTest', { partials: { navBar: 'navBar' } });
+	res.render('clientTest', { partials: { navBar: 'navBar', info: 'info' } });
 });
 
 module.exports = router;

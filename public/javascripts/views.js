@@ -6,7 +6,7 @@ SolGame.views = {
 	
 	init : function() {
 		SolGame.views.pixiApp = new PIXI.Application();
-		document.body.appendChild(SolGame.views.pixiApp.view);
+		$('#solRender').append(SolGame.views.pixiApp.view);
 		
 		SolGame.views.drift = new PIXI.Graphics();
 		SolGame.views.drift.lineStyle(1, 0xFFFFFF);

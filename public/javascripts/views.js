@@ -188,7 +188,7 @@ SolGame.views = {
 		
 		var curCurvePos = null;
 		if(SolGame.views.routeLrg != null)
-			SolGame.Shared.NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
+			curCurvePos = SolGame.Shared.NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
 		
 		if(null != curCurvePos) {
 			SolGame.views.curvePos.position.x = SolGame.views.getRenderedPosition(curCurvePos.x, true);

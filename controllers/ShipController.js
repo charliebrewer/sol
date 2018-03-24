@@ -29,7 +29,7 @@ module.exports = function() {
 				return;
 			}
 			
-			PlayerDAO().getPlayer(dataBox, function(plrRecord) {
+			PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
 				if(plrRecord['location_type'] != NavigationMechanics().LOCATION_TYPE_STATION ||
 					plrRecord['location_type'] != plrShip['location_type'] ||
 					plrRecord['location_id'] != plrShip['location_id']

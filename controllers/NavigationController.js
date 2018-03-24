@@ -95,8 +95,8 @@ module.exports = function() {
 		*/
 		var startTimeMs = routeLrg.routeSegs[0].sCrd.t * 1000;
 		
-		PlayerDAO().getPlayer(dataBox, function(playerRecord) {
-			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(playerRoutes) {
+		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(playerRecord) {
+			PlayerRoutesDAO().getPlayerRoutes(dataBox, dataBox.getPlrId(), function(playerRoutes) {
 				var routeSmlArr = [];
 				playerRoutes.forEach(function(r) {
 					//getRouteSml = function(routeId, destinationType, destinationId, plrShipId, routeSegsSml) {
@@ -105,7 +105,7 @@ module.exports = function() {
 						r['destination_type'],
 						r['destination_id'],
 						r['plr_ship_id'],
-						r['route_data']
+						JSON.parse(r['route_data'])
 					));
 				});
 					
@@ -130,8 +130,8 @@ module.exports = function() {
 					// TODO implement ships
 					// Check if the player owns the ship and if the ship is located at the same station
 					
-					CelestialBodiesDAO().getBodies(function(cBodies) {
-						StationsDAO().getStations(cBodies, function(stations) {
+					CelestialBodiesDAO().getBodies(dataBox, function(cBodies) {
+						StationsDAO().getStations(dataBox, cBodies, function(stations) {
 							var station = stations.find(function(s) { return s['station_id'] == locationInfo.locationId; });
 							
 							var stationCrd = OrbitalMechanics().getStationCrd(station, startTimeMs, cBodies, true);
@@ -166,7 +166,7 @@ module.exports = function() {
 								// For the route itself we want to use the small version
 								playerRoute['route_data'] = input.rd;
 								
-								PlayerRoutesDAO().updatePlayerRoutes(playerRoute, function(prOutput) {
+								PlayerRoutesDAO().updatePlayerRoutes(dataBox, playerRoute, function(prOutput) {
 									playerRecord['location_type'] = module.LOCATION_TYPE_ROUTE;
 									playerRecord['location_id'] = playerRoute['route_id'];
 									

@@ -10,10 +10,10 @@ module.exports = function() {
 		output.data.celestialBodies = [];
 		output.data.stations = [];
 		
-		CelestialBodiesDAO().getBodies(function(celestialBodies) {
+		CelestialBodiesDAO().getBodies(dataBox, function(celestialBodies) {
 			output.data.celestialBodies = celestialBodies;
 			
-			StationsDAO().getStations(celestialBodies, function(stations) {
+			StationsDAO().getStations(dataBox, celestialBodies, function(stations) {
 				output.data.stations = stations;
 				
 				DefQuestsDAO().getQuests(dataBox, function(defQuests) {

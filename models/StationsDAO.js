@@ -5,12 +5,16 @@ var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'def_stations';
-	module.keyName   = 'station_id';
-	module.fields    = ['station_id', 'name', 'img_url', 'parent_body_id', 'distance_from_parent', 'flags'];
+	module.params = {
+		tableName      : 'def_stations',
+		keyName        : 'station_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_ALL
+	};
 	
-	module.getStations = function(celestialBodies, callback) {
-		PersistentDataAccess().selectAll(module.tableName, function(stations) {
+	module.getStations = function(dataBox, celestialBodies, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, 0, function(stations) {
 			stations.forEach(function(station) {
 				for(let i = 0; i < celestialBodies.length; i++) {
 					if(celestialBodies[i]['celestial_body_id'] == station['parent_body_id']) {

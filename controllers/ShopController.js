@@ -17,7 +17,7 @@ module.exports = function() {
 
 		// TODO verify player and shop def are at the same location
 		
-		DefShopItemsDAO().getShopItems(input.shopId, function(shopItemRecords) {
+		DefShopItemsDAO().getShopItems(dataBox, input.shopId, function(shopItemRecords) {
 			// Loop and find our shop item
 			var shopItemRecord = null;
 			

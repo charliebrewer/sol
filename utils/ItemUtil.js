@@ -105,7 +105,7 @@ module.exports = function() {
 				};
 				
 				item.getPlrQuantity = function(dataBox, callback) {
-					PlayerDAO().getPlayer(dataBox, function(playerRecord) {
+					PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(playerRecord) {
 						callback(playerRecord['credits']);
 					});
 				};

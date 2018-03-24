@@ -3,21 +3,16 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'def_shop';
-	module.keyName   = 'shop_id';
-	module.fields    = ['shop_id', 'name', 'station_id', 'flags'];
+	module.params = {
+		tableName      : 'def_shop',
+		keyName        : 'shop_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_ALL
+	};
 	
-	module.getShop = function(shopId, callback) {
-		PersistentDataAccess().selectMany(module.tableName, module.keyName, shopId, function(shopRecords) {
-			var shopDef = shopRecords.pop();
-			
-			if(undefined == shopDef) {
-				console.log('Could not find shop ' + shopId);
-				callback({});
-			} else {
-				callback(shopDef);
-			}
-		});
+	module.getShop = function(dataBox, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, 0, callback);
 	};
 	
 	return module;

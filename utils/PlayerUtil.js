@@ -24,8 +24,8 @@ module.exports = function() {
 	};
 	
 	module.syncLocation = function(dataBox, callback) {
-		PlayerDAO().getPlayer(dataBox, function(plrRecord) {
-			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(plrRoutes) {
+		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
+			PlayerRoutesDAO().getPlayerRoutes(dataBox, dataBox.getPlrId(), function(plrRoutes) {
 				var routeSmlArr = [];
 				plrRoutes.forEach(function(r) {
 					routeSmlArr.push(NavigationMechanics().getRouteSml(

@@ -15,10 +15,10 @@ module.exports = function() {
 	 * @return JSON object with player data.
 	 */
 	 module.getAllPlayerData = function(dataBox, input, output, callback) {
-		PlayerDAO().getPlayer(dataBox, function(playerRecord) {
+		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(playerRecord) {
 			output.data.playerRecord = playerRecord;
 			
-			PlayerRoutesDAO().getPlayerRoutes(dataBox.getPlrId(), function(playerRoutes) {
+			PlayerRoutesDAO().getPlayerRoutes(dataBox, dataBox.getPlrId(), function(playerRoutes) {
 				var pr = [];
 				
 				for(let i = 0; i < playerRoutes.length; i++) {
@@ -27,7 +27,7 @@ module.exports = function() {
 						playerRoutes[i]['destination_type'],
 						playerRoutes[i]['destination_id'],
 						0, // TODO add ship ID
-						playerRoutes[i]['route_data']
+						JSON.parse(playerRoutes[i]['route_data'])
 					));
 				}
 				

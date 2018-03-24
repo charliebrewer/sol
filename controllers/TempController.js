@@ -1,28 +1,64 @@
 var PersistentDataAccess = require('../models/PersistentDataAccess');
 //var PlayerDAO = require('../models/PlayerDAO');
+var DefQuestsDAO = require('../models/DefQuestsDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
+var DefCommoditiesDAO = require('../models/DefCommoditiesDAO');
 var DefBucketItemsDAO = require('../models/DefBucketItemsDAO');
-//var ItemController = require('./ItemController');
+var ItemUtil = require('../utils/ItemUtil');
 var NavigationController = require('./NavigationController');
+var QuestController = require('./QuestController');
+var ShipController = require('./ShipController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
+var QuestMechanics = require('../helpers/QuestMechanics');
 var ShipMechanics = require('../helpers/ShipMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 var Bezier = require('bezier-js');
 var DataBox = require('../helpers/DataBox');
+var BucketMechanics = require('../helpers/BucketMechanics');
 
 module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
-		console.log(dataBox.data);
-		DefBucketItemsDAO().getBucketItems(dataBox, 1, function(bucketItems) {
-			console.log(dataBox.data);
+		
+		input.defStationId = 1;
+		QuestController().arriveAtStation(dataBox, input, output, callback);
+		
+		return;
+		
+		// Accept quest
+		DefQuestsDAO().getQuests(dataBox, function(defQuests) {
+			var defQuest = defQuests[1];
 			
-			DefBucketItemsDAO().getBucketItems(dataBox, 1, function(bucketItems) {
-				console.log(dataBox.data);
+			DefCommoditiesDAO().getCommodities(dataBox, function(defCommodities) {
+				input.questInstance = QuestMechanics().generateQuestInstance(defQuest, defCommodities);
+				input.defQuestId = defQuest['quest_id'];
+				
+				QuestController().acceptQuest(dataBox, input, output, function(res) {});
+				
+				callback(output);
 			});
 		});
+		
+		return;
+		
+		input.defQuestId = 0;
+		input.questInstance = {};
+		
+		QuestController().acceptQuest(dataBox, input, output, function(res) {
+			QuestController().arriveAtStation();
+		});
+		
+		
+		return;
+		ShipController().setActiveShip(dataBox, {"plrShipId" : 1}, output, callback);
+		
+		var bucket = BucketMechanics().createEmptyBucket();
+		bucket.modifyContents(BucketMechanics().ITEM_TYPE_SHIP, 1, -1);
+		
+		ItemUtil().giveBucketToPlayer(dataBox, bucket, function(res) { console.log(res); });
+		
 		
 		callback(output);
 		return;

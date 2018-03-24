@@ -57,7 +57,7 @@ module.exports = function() {
 						return;
 					}
 					
-					PlayerDAO().getPlayer(dataBox, function(plrRecord) {
+					PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
 						if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || defQuest['station_id'] != plrRecord['location_id']) {
 							output.messages.push("Not at the correct station");
 							callback(output);
@@ -106,7 +106,7 @@ module.exports = function() {
 			return;
 		}
 		
-		PlayerDAO().getPlayer(dataBox, function(plrRecord) {
+		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
 			if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || input.defStationId != plrRecord['location_id']) {
 				output.messages.push("Not at the correct station");
 				callback(output);

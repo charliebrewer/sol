@@ -7,21 +7,24 @@ module.exports = function() {
 	
 	module.FLAG_DISABLED = 1;
 	
-	module.tableName = 'def_celestial_bodies';
-	module.keyName   = 'celestial_body_id';
-	module.fields    = ['celestial_body_id', 'name', 'mass', 'radius', 'img_url', 'parent_body_id', 'distance_from_parent', 'orbital_period_hours', 'flags'];
+	module.params = {
+		tableName      : 'def_celestial_bodies',
+		keyName        : 'celestial_body_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_ALL
+	};
 	
-	module.getBodies = function(callback) {
-		PersistentDataAccess().selectAll(module.tableName, function(celestialBodies) {
+	module.getBodies = function(dataBox, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, 0, function(cBodies) {
 			var returnBodies = [];
 			
-			for(var i = 0; i < celestialBodies.length; i++) {
-				if(0 == (module.FLAG_DISABLED & celestialBodies[i]['flags'])) {
-					returnBodies.push(celestialBodies[i]);
-				}
-			}
+			cBodies.forEach(function(cBody) {
+				if(0 == (module.FLAG_DISABLED & cBody['flags']))
+					returnBodies.push(cBody);
+			});
 			
-			OrbitalMechanics().populateOrbitalPeriods(celestialBodies);
+			OrbitalMechanics().populateOrbitalPeriods(returnBodies);
 			
 			callback(returnBodies);
 		});

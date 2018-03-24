@@ -3,30 +3,26 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'plr_routes';
-	module.keyName   = 'plr_id';
-	module.fields    = ['route_id', 'plr_id', 'plr_ship_id', 'destination_type', 'destination_id', 'min_x', 'max_x', 'min_y', 'max_y', 'time_end', 'route_data', 'flags'];
+	module.params = {
+		tableName      : 'plr_routes',
+		keyName        : 'plr_id',
+		useDataBox     : true,
+		cacheTimeoutSc : 0,
+		setType        : PersistentDataAccess().SET_TYPE_MANY
+	};
 	
-	module.getPlayerRoutes = function(plrId, callback) {
-		PersistentDataAccess().selectMany(module.tableName, module.keyName, plrId, function(playerRoutes) {
-			for(var i = 0; i < playerRoutes.length; i++) {
-				playerRoutes[i]['route_data'] = JSON.parse(playerRoutes[i]['route_data']);
-			}
-			
-			callback(playerRoutes);
-		});
+	module.getPlayerRoutes = function(dataBox, plrId, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, plrId, callback);
 	};
 	
 	module.getPlayerRoute = function(routeId, callback) {
 		PersistentDataAccess().selectOne(module.tableName, 'route_id', routeId, callback);
 	};
 	
-	module.updatePlayerRoutes = function(playerRoute, callback) {
-		playerRoute['route_data'] = JSON.stringify(playerRoute['route_data']);
+	module.updatePlayerRoutes = function(dataBox, plrRoute, callback) {
+		plrRoute['route_data'] = JSON.stringify(plrRoute['route_data']);
 		
-		PersistentDataAccess().updateOne(module.tableName, module.keyName, module.fields, playerRoute, function(output) {
-			callback(output);
-		});
+		PersistentDataAccess().setData(dataBox, module.params, plrRoute, callback);
 	}
 	
 	return module;

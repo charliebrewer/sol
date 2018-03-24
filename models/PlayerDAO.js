@@ -15,18 +15,16 @@ module.exports = function() {
 		setType        : PersistentDataAccess().SET_TYPE_ONE
 	};
 	
-	module.getPlayer = function(dataBox, callback) {
-		PersistentDataAccess().getData(dataBox, module.params, dataBox.getPlrId(), callback);
+	module.getPlayer = function(dataBox, plrId, callback) {
+		PersistentDataAccess().getData(dataBox, module.params, plrId, callback);
 	};
 	
 	module.updatePlayer = function(dataBox, playerRecord, callback) {
-		PersistentDataAccess().updateOne(module.tableName, module.keyName, module.fields, playerRecord, function(output) {
-			callback(output);
-		});
+		PersistentDataAccess().setData(dataBox, params, playerRecord, callback);
 	};
 	
 	module.modifyCredits = function(dataBox, creditDelta, callback) {
-		PersistentDataAccess().updateByDelta(module.tableName, module.keyName, dataBox.getPlrId(), 'credits', creditDelta, callback);
+		PersistentDataAccess().updateByDelta(module.params.tableName, module.params.keyName, dataBox.getPlrId(), 'credits', creditDelta, callback);
 	};
 	
 	return module;

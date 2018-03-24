@@ -72,16 +72,21 @@ SolGame.views = {
 		SolGame.views.pixiApp.stage.addChild(SolGame.views.curvePos);
 		
 		var route;
+		var startCrd = null;
 		
-		var startCrd = SolGame.Shared.OrbitalMechanics().getCrd(
-			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.x,
-			SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.y,
-			0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
-			100,
-			0
-		);
-		
-		SolGame.views.routeLrg = SolGame.Shared.NavigationMechanics().getRouteLrg(SolGame.PlayerData.playerRoutes[0]);
+		if(undefined != SolGame.PlayerData.playerRoutes[0].rd[0]) {
+			startCrd = SolGame.Shared.OrbitalMechanics().getCrd(
+				SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.x,
+				SolGame.PlayerData.playerRoutes[0].rd[0].sCrd.pos.y,
+				0, // Temporarily hard coded, it is difficult to pull out the movement vector for a drift from a bezier curve subsection
+				100,
+				0
+			);
+			
+			SolGame.views.routeLrg = SolGame.Shared.NavigationMechanics().getRouteLrg(SolGame.PlayerData.playerRoutes[0]);
+		} else {
+			SolGame.views.routeLrg = null;
+		}
 		
 		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
 			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i].rd.length; j++) {
@@ -181,7 +186,9 @@ SolGame.views = {
 		SolGame.views.drift.drawCircle(SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.x, true), SolGame.views.getRenderedPosition(SolGame.views.driftCrds[SolGame.views.currentDriftI].pos.y, false), 10);
 		*/
 		
-		var curCurvePos = SolGame.Shared.NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
+		var curCurvePos = null;
+		if(SolGame.views.routeLrg != null)
+			SolGame.Shared.NavigationMechanics().getPosOnRoute(SolGame.views.routeLrg, currTimeMs);
 		
 		if(null != curCurvePos) {
 			SolGame.views.curvePos.position.x = SolGame.views.getRenderedPosition(curCurvePos.x, true);

@@ -10,11 +10,11 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
 	</head>
 	<body>
-		<div class="solContainer">
-			<div class="solNavBar">{{> navBar }}</div>
-			<div class="solRenderAndInfo">
-				<div id="solRender" style="float:left; width:800px;"></div>
-				<div id="solInfo" style="float:right; width:200px;">{{> info }}</div>
+		<div id="solContainer">
+			<div id="solNavBar">{{> navBar }}</div>
+			<div id="solRenderAndInfo">
+				<div id="solRender"></div>
+				<div id="solInfo"></div>
 			</div>
 		</div>
 		<input type="submit" onclick="plotRouteISS();" value="To ISS"></input>
@@ -29,6 +29,7 @@
 	<script src="javascripts/DefinitionsData.js"></script>
 	<script src="javascripts/PlayerData.js"></script>
 	<script src="javascripts/NavigationController.js"></script>
+	<script src="javascripts/InfoDiv.js"></script>
 	<script src="javascripts/app.js"></script>
 	<script>
 		SolGame.app.init(function() {

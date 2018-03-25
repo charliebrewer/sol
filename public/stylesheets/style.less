@@ -1,13 +1,21 @@
 body {
-  padding: 50px;
+  padding: 10px;
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
 }
 
-a {
-  color: #00B7FF;
+#solContainer {
+	width: 1200px;
+	margin: auto;
 }
 
-ul {
+/*******************************************************************************
+Navigation Bar
+*******************************************************************************/
+#solNavBar {
+	height: 41px;
+}
+
+#solNavBar ul {
     list-style-type: none;
     margin: 0;
     padding: 0;
@@ -15,19 +23,38 @@ ul {
     background-color: #333;
 }
 
-li {
+#solNavBar li {
     float: left;
 }
 
-li a {
+#solNavBar li a {
     display: block;
     color: white;
     text-align: center;
-    padding: 14px 16px;
+    padding: 10px 16px;
     text-decoration: none;
 }
 
 /* Change the link color to #111 (black) on hover */
-li a:hover {
+#solNavBar li a:hover {
     background-color: #111;
+}
+
+/*******************************************************************************
+Render
+*******************************************************************************/
+#solRender {
+	float: left;
+	width: 800px;
+}
+
+/*******************************************************************************
+Info
+*******************************************************************************/
+#solInfo {
+	float: right;
+	width: 293px;
+	height: 508px;
+	border-style: solid;
+	border-width: 1px;
 }

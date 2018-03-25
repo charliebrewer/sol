@@ -1,4 +1,5 @@
 var PlayerDAO = require('../models/PlayerDAO');
+var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
@@ -36,7 +37,11 @@ module.exports = function() {
 				PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
 					output.data.playerShips = plrShips;
 					
-					callback(output);
+					PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
+						output.data.playerQuests = plrQuests;
+						
+						callback(output);
+					});
 				});
 			});
 		});

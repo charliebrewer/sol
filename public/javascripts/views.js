@@ -5,7 +5,7 @@ SolGame.views = {
 	route : null,
 	
 	init : function() {
-		SolGame.views.pixiApp = new PIXI.Application();
+		SolGame.views.pixiApp = new PIXI.Application({width: 900, height: 510});
 		$('#solRender').append(SolGame.views.pixiApp.view);
 		
 		SolGame.views.drift = new PIXI.Graphics();
@@ -55,7 +55,7 @@ SolGame.views = {
 	startingTimeMs : Date.now(), // TODO remove, temp hack so i can look at the same data over and over
 	totalTimeSec : 100,
 	systemSizeX : 2500,
-	systemSizeY : 1875,
+	systemSizeY : 1470,
 	driftCrds : [],
 	routeLrg : null,
 	

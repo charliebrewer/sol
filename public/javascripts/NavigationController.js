@@ -9,6 +9,12 @@ SolGame.NavigationController = {
 	
 	MIN_START_DELAY_MS : 5000, // Minimum seconds in the future that we are allowing for a course to start
 	
+	// Temp function to plot and lock in a route to a station
+	tempPlotRoute : function(destinationStationId) {
+		var route = SolGame.NavigationController.plotRoute(Date.now() + SolGame.NavigationController.MIN_START_DELAY_MS + 1000, 0, SolGame.NavigationController.DESTINATION_TYPE_STATION, destinationStationId);
+		SolGame.NavigationController.lockInRoute(route);
+	},
+	
 	plotRoute : function(startTimeMs, plrShipId, destinationType, destinationId) {
 		startTimeMs = Math.round(startTimeMs / 1000) * 1000;
 		if(startTimeMs < Date.now() + SolGame.NavigationController.MIN_START_DELAY_MS) {

@@ -54,8 +54,8 @@ SolGame.views = {
 	flag : true, // TODO remove
 	startingTimeMs : Date.now(), // TODO remove, temp hack so i can look at the same data over and over
 	totalTimeSec : 100,
-	systemSizeX : 2500,
-	systemSizeY : 1470,
+	systemSizeX : 4000,
+	systemSizeY : Math.round(4000 / 1.777),
 	driftCrds : [],
 	routeLrg : null,
 	

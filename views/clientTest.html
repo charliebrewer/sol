@@ -17,8 +17,6 @@
 				<div id="solInfo"></div>
 			</div>
 		</div>
-		<input type="submit" onclick="plotRouteISS();" value="To ISS"></input>
-		<input type="submit" onclick="plotRouteSol();" value="To SolObs"></input>
 	</body>
 	
 	<!-- <script src="javascripts/pixi_test.js"></script> -->
@@ -29,41 +27,12 @@
 	<script src="javascripts/DefinitionsData.js"></script>
 	<script src="javascripts/PlayerData.js"></script>
 	<script src="javascripts/NavigationController.js"></script>
+	<script src="javascripts/QuestCtrl.js"></script>
 	<script src="javascripts/InfoDiv.js"></script>
 	<script src="javascripts/app.js"></script>
 	<script>
 		SolGame.app.init(function() {
-		SolGame.app.start(function() {});
+			SolGame.app.start(function() {});
 		});
-		
-		var waitTimeMs = 6000;
-		
-		plotRouteISS = function() {
-			var route = SolGame.NavigationController.plotRoute(
-			Date.now() + waitTimeMs,
-			0,
-			SolGame.NavigationController.DESTINATION_TYPE_STATION,
-			1
-		);
-		
-		SolGame.models.plotRoute(route, function() {});
-		}
-		
-		plotRouteSol = function() {
-			var route = SolGame.NavigationController.plotRoute(
-			Date.now() + waitTimeMs,
-			0,
-			SolGame.NavigationController.DESTINATION_TYPE_STATION,
-			2
-		);
-		
-		SolGame.models.plotRoute(route, function() {});
-		}
-		//SolGame.models.updateDefinitionsData(function() {console.log(SolGame.DefinitionsData)});
-		//console.log(SolGame);
-		//console.log(SolGame);
-		//setTimeout(function() {console.log("In timeout");SolGame.PlayerData.test = true;console.log(SolGame);}, 5000);
-		//SolGame.PlayerData.test = true;
-		//console.log(SolGame);
 	</script>
 </html>

@@ -97,57 +97,66 @@ module.exports = function() {
 		});
 	};
 	
-	module.arriveAtStation = function(dataBox, input, output, callback) {
-		// Check if this player has any quests that are not complete and will be completed at this station
-		// Complete them
-		if(undefined == input.defStationId) {
+	module.completeQuest = function(dataBox, input, output, callback) {
+		if(undefined == input.plrQuestId) {
 			output.messages.push("Invalid input");
 			callback(output);
 			return;
 		}
 		
-		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
-			if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || input.defStationId != plrRecord['location_id']) {
-				output.messages.push("Not at the correct station");
+		PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
+			var plrQuest = plrQuests.find(e => e['plr_quest_id'] == input.plrQuestId);
+			
+			if(undefined == plrQuest || plrQuest['completed_time_sc'] != 0) {
+				output.messages.push("Invalid quest.");
 				callback(output);
 				return;
 			}
 			
-			var timeSc = Math.round(dataBox.getTimeMs() / 1000);
+			// The player who owns this quest is completing it, before we reward them just complete it
+			plrQuest['completed_time_sc'] = Math.round(dataBox.getTimeMs() / 1000);
+			PlayerQuestsDAO().storePlrQuest(dataBox, plrQuest, function() {});
 			
-			PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
-				var questsToComplete = plrQuests.filter(e => 0 == e['completed_time_sc'] && input.defStationId == e['destination_station_id']);
+			PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
+				if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type']) {
+					output.messages.push("Not at a station");
+					callback(output);
+					return;
+				}
 				
-				if(questsToComplete.length > 0)
-					PlayerQuestsDAO().completeQuestsAtStation(dataBox, input.defStationId, function() {});
+				if(plrRecord['location_id'] != plrQuest['destination_station_id']) {
+					output.messages.push("Not at the destination station");
+					callback(output);
+					return;
+				}
 				
-				questsToComplete.forEach(function(quest) {
-					if(quest['start_time_sc'] + quest['max_time_sc'] > timeSc) {
-						var cargo = ItemUtil().getItem(
-							ItemUtil().ITEM_TYPE_COMMODITY,
-							quest['def_commodity_id'],
-							quest['commodity_quantity']
+				if(plrQuest['start_time_sc'] + plrQuest['max_time_sc'] < dataBox.getTimeMs() / 1000) {
+					output.messages.push("Took too long");
+					callback(output);
+					return;
+				}
+				
+				var cargo = ItemUtil().getItem(
+					ItemUtil().ITEM_TYPE_COMMODITY,
+					plrQuest['def_commodity_id'],
+					plrQuest['commodity_quantity']
+				);
+				
+				cargo.getPlrQuantity(dataBox, function(plrCargoQuantity) {
+					if(plrCargoQuantity >= plrQuest['commodity_quantity']) {
+						// Success, the player has completed the mission under the required time and has all the items
+						cargo.quantity *= -1;
+						cargo.giveToPlayer(dataBox, function() {});
+						
+						var reward = ItemUtil().getItem(
+							ItemUtil().ITEM_TYPE_CREDITS,
+							0,
+							plrQuest['total_value']
 						);
 						
-						cargo.getPlrQuantity(dataBox, function(plrCargoQuantity) {
-							if(plrCargoQuantity >= quest['commodity_quantity']) {
-								// Success, the player has completed the mission under the required time and has all the items
-								cargo.quantity *= -1;
-								cargo.giveToPlayer(dataBox, function() {});
-								
-								var reward = ItemUtil().getItem(
-									ItemUtil().ITEM_TYPE_CREDITS,
-									0,
-									quest['total_value']
-								);
-								
-								reward.giveToPlayer(dataBox, function() {});
-							}
-						});
+						reward.giveToPlayer(dataBox, function() {});
 					}
 				});
-				
-				callback(output);
 			});
 		});
 	};

@@ -7,9 +7,10 @@ module.exports = function() {
 	 * @param defQuestId The definition quest this instance was based off of
 	 * @param maxTimeSc The total time that the player has to complete this quest, not the real time but the delta
 	 */
-	module.getQuestInstance = function(defCommodityId, commodityQuantity, totalValue, maxTimeSc, destinationStationId) {
+	module.getQuestInstance = function(defQuestId, defCommodityId, commodityQuantity, totalValue, maxTimeSc, destinationStationId) {
 		var quest = {};
 		
+		quest.defQuestId = defQuestId;
 		quest.defCommodityId = defCommodityId;
 		quest.commodityQuantity = commodityQuantity;
 		quest.totalValue = totalValue;
@@ -32,6 +33,7 @@ module.exports = function() {
 		var destStationId = destStations[Math.floor(Math.random() * destStations.length)];
 		
 		return module.getQuestInstance(
+			defQuest['quest_id'],
 			commodity['commodity_id'],
 			cargoQuantity,
 			cargoQuantity * defQuest['cargo_value'],

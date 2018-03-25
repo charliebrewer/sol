@@ -3,6 +3,8 @@ SolGame.models = {
 	COMMAND_GET_ALL_CLIENT_DATA : 100,
 	COMMAND_GET_ALL_DEFINITIONS_DATA : 101,
 	COMMAND_GET_ALL_PLAYER_DATA : 110,
+	COMMAND_ACCEPT_QUEST : 220,
+	COMMAND_COMPLETE_QUEST : 230,
 	COMMAND_PLOT_ROUTE : 310,
 	
 	/**
@@ -36,6 +38,14 @@ SolGame.models = {
 	},
 	
 	// Update server functions
+	
+	acceptQuest : function(data, callback) {
+		SolGame.models.runCommand(SolGame.models.COMMAND_ACCEPT_QUEST, data, callback);
+	},
+	
+	completeQuest : function(data, callback) {
+		SolGame.models.runCommand(SolGame.models.COMMAND_COMPLETE_QUEST, data, callback);
+	},
 	
 	plotRoute : function(data, callback) {
 		SolGame.models.runCommand(SolGame.models.COMMAND_PLOT_ROUTE, data, callback);

@@ -16,7 +16,7 @@ module.exports = function() {
 		110 : PlayerController().getAllPlayerData,
 		210 : ShopController().activateShopItem,
 		220 : QuestController().acceptQuest,
-		230 : QuestController().arriveAtStation,
+		230 : QuestController().completeQuest,
 		310 : NavigationController().plotRoute
 	};
 	

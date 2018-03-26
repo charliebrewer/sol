@@ -155,6 +155,8 @@ module.exports = function() {
 						);
 						
 						reward.giveToPlayer(dataBox, function() {});
+						
+						callback(output);
 					}
 				});
 			});

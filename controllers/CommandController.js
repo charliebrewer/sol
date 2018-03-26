@@ -14,6 +14,7 @@ module.exports = function() {
 		100 : DataController().getAllClientData,
 		101 : DefinitionsController().getAllDefinitionsData,
 		110 : PlayerController().getAllPlayerData,
+		205 : ShopController().getShopsAtStation,
 		210 : ShopController().activateShopItem,
 		220 : QuestController().acceptQuest,
 		230 : QuestController().completeQuest,

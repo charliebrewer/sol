@@ -1,8 +1,43 @@
+var DefShopsDAO = require('../models/DefShopsDAO');
 var DefShopItemsDAO = require('../models/DefShopItemsDAO');
 var ItemUtil = require('../utils/ItemUtil');
 
 module.exports = function() {
 	var module = {};
+	
+	module.getShopsAtStation = function(dataBox, input, output, callback) {
+		output.data.defShops = [];
+		output.data.defShopItems = [];
+		
+		if(undefined == input.stationId) {
+			output.messages.push("Invalid input");
+			callback(output);
+			return;
+		}
+		
+		input.stationId = parseInt(input.stationId);
+		
+		DefShopsDAO().getShops(dataBox, function(defShops) {
+			var defShopsAtStation = defShops.filter(e => e['station_id'] == input.stationId);
+			
+			if(0 == defShopsAtStation.length) {
+				callback(output);
+				return;
+			}
+			
+			var shopIds = [];
+			defShopsAtStation.forEach(function(defShop) {
+				shopIds.push(defShop['shop_id']);
+			});
+			
+			DefShopItemsDAO().getShopItemsAtShops(dataBox, shopIds, function(defShopItems) {
+				output.data.defShops = defShopsAtStation;
+				output.data.defShopItems = defShopItems;
+				
+				callback(output);
+			});
+		});
+	};
 	
 	module.activateShopItem = function(dataBox, input, output, callback) {
 		if(undefined == input.shopId || undefined == input.shopItemId || undefined == input.sell) {

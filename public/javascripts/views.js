@@ -87,7 +87,7 @@ SolGame.views = {
 		} else {
 			SolGame.views.routeLrg = null;
 		}
-		
+		/*
 		for(var i = 0; i < SolGame.PlayerData.playerRoutes.length; i++) {
 			for(var j = 0; j < SolGame.PlayerData.playerRoutes[i].rd.length; j++) {
 				route = new PIXI.Graphics();
@@ -110,7 +110,7 @@ SolGame.views = {
 					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc2.x, false),
 					10
 				);
-				*/
+				* /
 				
 				route.bezierCurveTo(
 					SolGame.views.getRenderedPosition(SolGame.PlayerData.playerRoutes[i].rd[j].rc1.x, true),
@@ -122,6 +122,7 @@ SolGame.views = {
 				);
 			}
 		}
+		*/
 		
 		if(null != startCrd) {
 			var prevCrd = startCrd;

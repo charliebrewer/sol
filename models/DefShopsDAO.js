@@ -4,14 +4,14 @@ module.exports = function() {
 	var module = {};
 	
 	module.params = {
-		tableName      : 'def_shop',
+		tableName      : 'def_shops',
 		keyName        : 'shop_id',
 		useDataBox     : true,
 		cacheTimeoutSc : 0,
 		setType        : PersistentDataAccess().SET_TYPE_ALL
 	};
 	
-	module.getShop = function(dataBox, callback) {
+	module.getShops = function(dataBox, callback) {
 		PersistentDataAccess().getData(dataBox, module.params, 0, callback);
 	};
 	

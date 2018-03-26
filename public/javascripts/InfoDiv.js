@@ -100,6 +100,61 @@ SolGame.InfoDiv = {
 		*/
 	},
 	
+	showShopsAtStation : function() {
+		SolGame.InfoDiv.clear();
+		
+		if(SolGame.Shared.NavigationMechanics().LOCATION_TYPE_STATION != SolGame.PlayerData.playerRecord['location_type']) {
+			SolGame.InfoDiv.getObj().html("You must be at a station to see available shops.");
+			return;
+		}
+		
+		const shopTemplate = ({ sName, sId }) => `
+		<div class='solShop'>
+			<span>${sName}</span><input type="submit" value="View Items" onclick="SolGame.InfoDiv.showShopItems(${sId})" />
+		</div>`;
+		
+		var output = [];
+		
+		SolGame.DefinitionsData.getShopsAtStation(SolGame.PlayerData.playerRecord['location_id'], function(shopsAtStation) {
+			shopsAtStation.defShops.forEach(function(defShop) {
+				output.push(shopTemplate({sName : defShop['name'], sId : defShop['shop_id']}));
+			});
+			
+			SolGame.InfoDiv.getObj().html(output.join('<br>'));
+		});
+	},
+	
+	showShopItems : function(shopId) {
+		SolGame.InfoDiv.clear();
+		
+		if(SolGame.Shared.NavigationMechanics().LOCATION_TYPE_STATION != SolGame.PlayerData.playerRecord['location_type']) {
+			SolGame.InfoDiv.getObj().html("You must be at a station to see available shops.");
+			return;
+		}
+		
+		const shopItemTemplate = ({ itemType, itemId, siId, sId }) => `
+		<div class='solShopItem'>
+			<span>Type: ${itemType}</span>
+			<span>ID: ${itemId}</span>
+			<input type="submit" value="Purchase" onclick="SolGame.models.activateShopItem({sell : 0, shopId : ${sId}, shopItemId : ${siId}}, function() {})" />
+		</div>`;
+		
+		var output = [];
+		
+		SolGame.DefinitionsData.getShopsAtStation(SolGame.PlayerData.playerRecord['location_id'], function(shopsAtStation) {
+			shopsAtStation.defShopItems.forEach(function(defShopItem) {
+				output.push(shopItemTemplate({
+					itemType : defShopItem['output_item_type'],
+					itemId : defShopItem['output_item_id'],
+					siId : defShopItem['shop_item_id'],
+					sId : defShopItem['shop_id']
+				}));
+			});
+			
+			SolGame.InfoDiv.getObj().html(output.join('<br>'));
+		});
+	},
+	
 	showInventory : function() {
 		SolGame.InfoDiv.clear();
 		

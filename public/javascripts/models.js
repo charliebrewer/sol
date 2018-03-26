@@ -3,6 +3,8 @@ SolGame.models = {
 	COMMAND_GET_ALL_CLIENT_DATA : 100,
 	COMMAND_GET_ALL_DEFINITIONS_DATA : 101,
 	COMMAND_GET_ALL_PLAYER_DATA : 110,
+	COMMAND_GET_SHOPS_AT_STATION : 205,
+	COMMAND_ACTIVATE_SHOP_ITEM : 210,
 	COMMAND_ACCEPT_QUEST : 220,
 	COMMAND_COMPLETE_QUEST : 230,
 	COMMAND_PLOT_ROUTE : 310,
@@ -37,6 +39,10 @@ SolGame.models = {
 		SolGame.models.runCommand(SolGame.models.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, callback);
 	},
 	
+	getShopsAtStation : function(sId, callback) {
+		SolGame.models.runCommand(SolGame.models.COMMAND_GET_SHOPS_AT_STATION, {stationId : sId}, callback);
+	},
+	
 	// Update server functions
 	
 	acceptQuest : function(data, callback) {
@@ -49,5 +55,9 @@ SolGame.models = {
 	
 	plotRoute : function(data, callback) {
 		SolGame.models.runCommand(SolGame.models.COMMAND_PLOT_ROUTE, data, callback);
+	},
+	
+	activateShopItem : function(data, callback) {
+		SolGame.models.runCommand(SolGame.models.COMMAND_ACTIVATE_SHOP_ITEM, data, callback);
 	}
 };

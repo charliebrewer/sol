@@ -1,5 +1,7 @@
 SolGame.app = {
 	init : function(callback) {
+		SolGame.models.init();
+		
 		// Start pixi and load assets
 		SolGame.views.init();
 		

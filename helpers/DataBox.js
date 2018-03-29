@@ -33,6 +33,10 @@ module.exports = function() {
 			delete dataBox.data[tag];
 		};
 		
+		dataBox.flush = function() {
+			dataBox.data = {};
+		};
+		
 		return dataBox;
 	};
 	

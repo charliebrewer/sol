@@ -15,7 +15,7 @@ SolGame.DefinitionsData = {
 	},
 	
 	getShopsAtStation : function(sId, callback) {
-		if(undefined != SolGame.DefinitionsData.defShopsAtStation[sId]) {
+		if(false && undefined != SolGame.DefinitionsData.defShopsAtStation[sId]) {
 			callback(SolGame.DefinitionsData.defShopsAtStation[sId]);
 			return;
 		}

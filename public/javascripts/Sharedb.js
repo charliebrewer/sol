@@ -1,4 +1,50 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports = function() {
+	var module = {};
+	
+	module.getBox = function(plrId, timeMs) {
+		var dataBox = {};
+		
+		dataBox.plrId = parseInt(plrId);
+		dataBox.timeMs = parseInt(timeMs);
+		
+		dataBox.data = {};
+		
+		dataBox.getPlrId = function() {
+			return dataBox.plrId;
+		};
+		
+		dataBox.getTimeMs = function() {
+			return dataBox.timeMs;
+		};
+		
+		dataBox.getData = function(tag) {
+			return dataBox.data[tag];
+		};
+		
+		dataBox.setData = function(tag, data) {
+			dataBox.data[tag] = data;
+		};
+		
+		dataBox.hasData = function(tag) {
+			return undefined != dataBox.getData(tag);
+		};
+		
+		dataBox.clrData = function(tag) {
+			delete dataBox.data[tag];
+		};
+		
+		dataBox.flush = function() {
+			dataBox.data = {};
+		};
+		
+		return dataBox;
+	};
+	
+	return module;
+};
+
+},{}],2:[function(require,module,exports){
 var OrbitalMechanics = require('./OrbitalMechanics');
 var Bezier = require('bezier-js');
 var Victor = require('victor');
@@ -449,7 +495,7 @@ module.exports = function() {
 
 
 
-},{"./OrbitalMechanics":2,"bezier-js":4,"victor":8}],2:[function(require,module,exports){
+},{"./OrbitalMechanics":3,"bezier-js":5,"victor":9}],3:[function(require,module,exports){
 var Victor = require('victor');
 
 module.exports = function() {
@@ -698,7 +744,7 @@ module.exports = function() {
 	return module;
 };
 
-},{"victor":8}],3:[function(require,module,exports){
+},{"victor":9}],4:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	
@@ -767,10 +813,10 @@ module.exports = function() {
 	return module;
 };
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 module.exports = require('./lib/bezier');
 
-},{"./lib/bezier":5}],5:[function(require,module,exports){
+},{"./lib/bezier":6}],6:[function(require,module,exports){
 /**
   A javascript Bezier curve library by Pomax.
 
@@ -1620,7 +1666,7 @@ module.exports = require('./lib/bezier');
 
 }());
 
-},{"./poly-bezier.js":6,"./utils.js":7}],6:[function(require,module,exports){
+},{"./poly-bezier.js":7,"./utils.js":8}],7:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -1678,7 +1724,7 @@ module.exports = require('./lib/bezier');
   module.exports = PolyBezier;
 }());
 
-},{"./utils.js":7}],7:[function(require,module,exports){
+},{"./utils.js":8}],8:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -2228,7 +2274,7 @@ module.exports = require('./lib/bezier');
   module.exports = utils;
 }());
 
-},{"./bezier":5}],8:[function(require,module,exports){
+},{"./bezier":6}],9:[function(require,module,exports){
 exports = module.exports = Victor;
 
 /**
@@ -3554,9 +3600,10 @@ function degrees2radian (deg) {
 	return deg / degrees;
 }
 
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var victor = require('victor');
 
+var db = require('../../helpers/DataBox');
 var om = require('../../helpers/OrbitalMechanics');
 var nm = require('../../helpers/NavigationMechanics');
 var qm = require('../../helpers/QuestMechanics');
@@ -3564,9 +3611,10 @@ var qm = require('../../helpers/QuestMechanics');
 SolGame.Shared = {
 	Victor : victor,
 	
+	DataBox : db,
 	OrbitalMechanics : om,
 	NavigationMechanics : nm,
 	QuestMechanics : qm
 };
 
-},{"../../helpers/NavigationMechanics":1,"../../helpers/OrbitalMechanics":2,"../../helpers/QuestMechanics":3,"victor":8}]},{},[9]);
+},{"../../helpers/DataBox":1,"../../helpers/NavigationMechanics":2,"../../helpers/OrbitalMechanics":3,"../../helpers/QuestMechanics":4,"victor":9}]},{},[10]);

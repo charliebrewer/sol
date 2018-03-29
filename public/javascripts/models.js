@@ -59,6 +59,12 @@ SolGame.models = {
 		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, callback);
 	},
 	
+	getDefStations : function(callback) {
+		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, function(defData) {
+			callback(defData.stations);
+		});
+	},
+	
 	getShopsAtStation : function(sId, callback) {
 		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_SHOPS_AT_STATION, {stationId : sId}, callback);
 	},

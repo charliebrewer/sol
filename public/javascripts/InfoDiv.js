@@ -84,11 +84,14 @@ SolGame.InfoDiv = {
 		
 		var output = [];
 		
-		SolGame.DefinitionsData.stations.forEach(function(station) {
-			output.push(stationTemplate({ sName : station.name, plotCourse : 'SolGame.NavigationController.tempPlotRoute('+ station.station_id +')' }));
+		SolGame.models.getDefStations(function(defStations) {
+			defStations.forEach(function(station) {
+				output.push(stationTemplate({ sName : station.name, plotCourse : 'SolGame.NavigationController.tempPlotRoute('+ station.station_id +')' }));
+			});
+			
+			SolGame.InfoDiv.getObj().html(output.join('<br>'));
 		});
 		
-		SolGame.InfoDiv.getObj().html(output.join('<br>'));
 		/*
 		plotRouteISS = function() {
 			var route = SolGame.NavigationController.plotRoute(

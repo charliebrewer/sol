@@ -30,6 +30,10 @@ SolGame.models = {
 		
 		$.post("runCommand", {"req" : req}, function(output) {
 			// TODO do we want to handle success / failure and messages here, and not sending them to the callback?
+			output.messages.forEach(function(m) {
+				console.log(m);
+			});
+			
 			if(command.useDataBox)
 				SolGame.models.dataBox.setData(req, output.data);
 			

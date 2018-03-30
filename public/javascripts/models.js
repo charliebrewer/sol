@@ -1,32 +1,72 @@
 // Main end point for making calls to the server
 SolGame.models = {
 	commandCodes : {
-		COMMAND_GET_ALL_CLIENT_DATA      : {code : 100, useDataBox : true},
-		COMMAND_GET_ALL_DEFINITIONS_DATA : {code : 101, useDataBox : true},
-		COMMAND_GET_ALL_PLAYER_DATA      : {code : 110, useDataBox : true},
-		COMMAND_GET_SHOPS_AT_STATION     : {code : 205, useDataBox : true},
-		COMMAND_ACTIVATE_SHOP_ITEM       : {code : 210, useDataBox : false},
-		COMMAND_ACCEPT_QUEST             : {code : 220, useDataBox : false},
-		COMMAND_COMPLETE_QUEST           : {code : 230, useDataBox : false},
-		COMMAND_PLOT_ROUTE               : {code : 310, useDataBox : false}
+		CMD_GET_ALL_CLIENT_DATA      : {code : 100, useCmdCache : true},
+		CMD_GET_ALL_DEFINITIONS_DATA : {code : 101, useCmdCache : true},
+		CMD_GET_ALL_PLAYER_DATA      : {code : 110, useCmdCache : true},
+		CMD_GET_SHOPS_AT_STATION     : {code : 205, useCmdCache : true},
+		CMD_ACTIVATE_SHOP_ITEM       : {code : 210, useCmdCache : false},
+		CMD_ACCEPT_QUEST             : {code : 220, useCmdCache : false},
+		CMD_COMPLETE_QUEST           : {code : 230, useCmdCache : false},
+		CMD_PLOT_ROUTE               : {code : 310, useCmdCache : false}
 	},
 	
-	dataBox : null,
+	cmdCache : {
+		cache : {},
+		
+		disable : false,
+		
+		getData : function(cmdCode, inputStr) {
+			if(!this.hasData(cmdCode, inputStr))
+				return {};
+			
+			return this.cache[cmdCode][inputStr];
+		},
+		
+		setData : function(cmdCode, inputStr, data) {
+			if(this.disable)
+				return;
+			
+			if(undefined == this.cache[cmdCode])
+				this.cache[cmdCode] = {};
+			
+			this.cache[cmdCode][inputStr] = data;
+		},
+		
+		hasData : function(cmdCode, inputStr) {
+			if(undefined == this.cache[cmdCode])
+				return false;
+			
+			if(undefined == this.cache[cmdCode][inputStr])
+				return false;
+			
+			return true;
+		},
+		
+		clrData : function(cmdCode) {
+			delete this.cache[cmdCode];
+		},
+		
+		flush : function() {
+			this.cache = {};
+		},
+	},
 	
 	init : function() {
-		SolGame.models.dataBox = SolGame.Shared.DataBox().getBox(0,0);
 	},
 	
 	/**
 	 * Central function to interact with the server. Call callback with a single parameter, output.
 	 */
 	runCommand : function(command, input, callback) {
-		var req = JSON.stringify({"command" : command.code, "data" : input});
+		var inputStr = JSON.stringify(input);
 		
-		if(command.useDataBox && SolGame.models.dataBox.hasData(req)) {
-			callback(SolGame.models.dataBox.getData(req));
+		if(command.useCmdCache && this.cmdCache.hasData(command.code, inputStr)) {
+			callback(this.cmdCache.getData(command.code, inputStr));
 			return;
 		}
+		
+		var req = JSON.stringify({"command" : command.code, "data" : input});
 		
 		$.post("runCommand", {"req" : req}, function(output) {
 			// TODO do we want to handle success / failure and messages here, and not sending them to the callback?
@@ -34,8 +74,8 @@ SolGame.models = {
 				console.log(m);
 			});
 			
-			if(command.useDataBox)
-				SolGame.models.dataBox.setData(req, output.data);
+			if(command.useCmdCache)
+				SolGame.models.cmdCache.setData(command.code, inputStr, output.data);
 			
 			callback(output.data);
 		});
@@ -52,38 +92,41 @@ SolGame.models = {
 	 * information about other players should not be attempted here.
 	 */
 	getPlayerData : function(callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_ALL_PLAYER_DATA, {}, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_ALL_PLAYER_DATA, {}, callback);
 	},
 	
 	getDefinitionsData : function(callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_ALL_DEFINITIONS_DATA, {}, callback);
 	},
 	
 	getDefStations : function(callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_ALL_DEFINITIONS_DATA, {}, function(defData) {
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_ALL_DEFINITIONS_DATA, {}, function(defData) {
 			callback(defData.stations);
 		});
 	},
 	
 	getShopsAtStation : function(sId, callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_GET_SHOPS_AT_STATION, {stationId : sId}, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_SHOPS_AT_STATION, {stationId : sId}, callback);
 	},
 	
 	// Update server functions
 	
 	acceptQuest : function(data, callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_ACCEPT_QUEST, data, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_ACCEPT_QUEST, data, callback);
 	},
 	
 	completeQuest : function(data, callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_COMPLETE_QUEST, data, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_COMPLETE_QUEST, data, callback);
 	},
 	
 	plotRoute : function(data, callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_PLOT_ROUTE, data, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_PLOT_ROUTE, data, callback);
 	},
 	
 	activateShopItem : function(data, callback) {
-		SolGame.models.runCommand(SolGame.models.commandCodes.COMMAND_ACTIVATE_SHOP_ITEM, data, callback);
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_ACTIVATE_SHOP_ITEM, data, function(output) {
+			SolGame.models.cmdCache.clrData(SolGame.models.commandCodes.CMD_GET_ALL_PLAYER_DATA.code);
+			callback(output);
+		});
 	}
 };

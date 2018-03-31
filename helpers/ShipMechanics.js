@@ -27,6 +27,11 @@ module.exports = function() {
 		 return module.cargoItemTypes.includes(itemType);
 	};
 	
+	module.validateLoadout = function(plrShipLoadout, defShipLoadout) {
+		// TODO
+		return true;
+	};
+	
 	module.getCargoCapacity = function(plrShip, defShipModules) {
 		return 100; // TODO temp hack
 		var plrShipModules = plrShip['loadout'].split(',');

@@ -1,11 +1,12 @@
 module.exports = function() {
 	var module = {};
 	
-	module.ITEM_TYPE_NOTHING   = 0;
-	module.ITEM_TYPE_BUCKET    = 1;
-	module.ITEM_TYPE_CREDITS   = 2;
-	module.ITEM_TYPE_SHIP      = 3;
-	module.ITEM_TYPE_COMMODITY = 4;
+	module.ITEM_TYPE_NOTHING     = 0;
+	module.ITEM_TYPE_BUCKET      = 1;
+	module.ITEM_TYPE_CREDITS     = 2;
+	module.ITEM_TYPE_SHIP        = 3;
+	module.ITEM_TYPE_COMMODITY   = 4;
+	module.ITEM_TYPE_SHIP_MODULE = 5;
 	
 	module.createBucketFromDef = function(defBucket, defBucketItems) {
 		var bucket = module.createEmptyBucket();

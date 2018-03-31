@@ -3,17 +3,15 @@ var PersistentDataAccess = require('./PersistentDataAccess');
 module.exports = function() {
 	var module = {};
 	
-	module.FLAG_CAN_BE_CARGO = 2;
-	
 	module.params = {
-		tableName      : 'def_ship_modules',
-		keyName        : 'ship_module_id',
+		tableName      : 'def_ships',
+		keyName        : 'ship_id',
 		useDataBox     : true,
 		cacheTimeoutSc : 0,
 		setType        : PersistentDataAccess().SET_TYPE_ALL
 	};
 	
-	module.getShipModules = function(dataBox, callback) {
+	module.getShips = function(dataBox, callback) {
 		PersistentDataAccess().getData(dataBox, module.params, 0, callback);
 	};
 	

@@ -8,6 +8,7 @@ var DefBucketItemsDAO = require('../models/DefBucketItemsDAO');
 var ItemUtil = require('../utils/ItemUtil');
 var NavigationController = require('./NavigationController');
 var QuestController = require('./QuestController');
+var DefinitionsController = require('./DefinitionsController');
 var ShipController = require('./ShipController');
 var OrbitalMechanics = require('../helpers/OrbitalMechanics');
 var QuestMechanics = require('../helpers/QuestMechanics');
@@ -16,11 +17,22 @@ var NavigationMechanics = require('../helpers/NavigationMechanics');
 var Bezier = require('bezier-js');
 var DataBox = require('../helpers/DataBox');
 var BucketMechanics = require('../helpers/BucketMechanics');
+var pda = require('../models/PersistentDataAccess');
 
 module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
+		console.log('hey');
+		console.log(pda().dataBox.data);
+		DefinitionsController().getAllDefinitionsData(dataBox, input, output, function(data) {
+			console.log(pda().dataBox.data);
+			DefinitionsController().getAllDefinitionsData(dataBox, input, output, function(data2) {
+				callback(output);
+			});
+		});
+		
+		return;
 		
 		input.defStationId = 1;
 		QuestController().arriveAtStation(dataBox, input, output, callback);

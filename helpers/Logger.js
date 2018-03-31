@@ -6,12 +6,14 @@ module.exports = function() {
 	module.DEBUG    = 2;
 	module.VERBOSE  = 4;
 	module.DATABASE = 8;
+	module.ERROR    = 16;
 	
 	module.logLevel = module.NONE;
 	module.logLevel = module.logLevel | module.NORMAL;
 	//module.logLevel = module.logLevel | module.DEBUG;
 	//module.logLevel = module.logLevel | module.VERBOSE;
-	module.logLevel = module.logLevel | module.DATABASE;
+	//module.logLevel = module.logLevel | module.DATABASE;
+	module.logLevel = module.logLevel | module.ERROR;
 	
 	module.log = function(logLevel, logStr) {
 		if(0 != (module.logLevel & logLevel))

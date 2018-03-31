@@ -3,6 +3,7 @@ var DefinitionsController = require('./DefinitionsController');
 var NavigationController = require('./NavigationController');
 var PlayerController = require('./PlayerController');
 var QuestController = require('./QuestController');
+var ShipController = require('./ShipController');
 var ShopController = require('./ShopController');
 var TempController = require('./TempController');
 
@@ -18,7 +19,8 @@ module.exports = function() {
 		210 : ShopController().activateShopItem,
 		220 : QuestController().acceptQuest,
 		230 : QuestController().completeQuest,
-		310 : NavigationController().plotRoute
+		310 : NavigationController().plotRoute,
+		350 : ShipController().setActiveShip
 	};
 	
 	/**

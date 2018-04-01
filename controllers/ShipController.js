@@ -53,42 +53,25 @@ module.exports = function() {
 		});
 	};
 	
+	/**
+	 * Primary way to modify the modules attached to a ship, as well as buy and
+	 * sell modules. We handle all of this here because of edge cases that have
+	 * to do with equipping and unequipping modules - we need to have a
+	 * destination where they go. We can't just give a module to a player, it
+	 * has to exist in their ship's cargo (which might not have sufficient room)
+	 * or be equipped, and there's a bunch of validation that happens there.
+	 *
+	 * Example input below.
+	 *
+	 * input.sellModules = [17,5,5]; // def_ship_modules.ship_module_id
+	 * input.buyModules = [
+	 *     {shopId : 17, shopItemId : 288, quantity : 1},
+	 *     {shopId : 17, shopItemId : 228, quantity : 1},
+	 *     {shopId : 17, shopItemId : 277, quantity : 1}
+	 * ];
+	 * input.shipLoadout = [1,5,4,4,0,8,123,99,228]; // def_ship_modules.ship_module_id
+	 */
 	module.modifyModules = function(dataBox, input, output, callback) {
-		/*
-		input.sellModules = [17, 5, 5];
-		input.buyModules = [
-			{shopId : 17, shopItemId : 288, quantity : 1},
-			{shopId : 17, shopItemId : 228, quantity : 1},
-			{shopId : 17, shopItemId : 277, quantity : 1}
-		];
-		input.shipLoadout = [1,5,4,4,0,8,123,99,228];
-		
-		source modules is prev loadout, purchased modules, and cargo modules
-		requirement is new loadout, sold modules
-		difference+ needs to fit in cargo
-		difference- is error
-		
-		database calls
-		- plr_ships = update loadout and cargo
-		- plr_players = update credits
-		
-		psudeocode
-		verify player is at a station, has an active ship, etc
-		verify that ship loadout is valid
-		verify player has modules they are selling, sum their sale price
-		verify purchased items are valid
-		verify player can afford all items (has all input)
-		- potentially tricky, need to separate credits and all else
-		build bucket of source modules (defined above)
-		remove requirement items from bucket
-		- verify that all requirement items are present
-		verify that remaining items can
-		- go in cargo
-		- fit in cargo
-		====success====
-		update plr_ship
-		*/
-		
 		if(undefined == input.sellModules || undefined == input.buyModules || undefined == input.shipLoadout) {
 			output.messages.push("Invalid input");
 			callback(output);
@@ -113,55 +96,56 @@ module.exports = function() {
 					return;
 				}
 				
-				DefShipsDAO().getShips(dataBox, function(defShips) {
-					var defShip = defShips.find(e => e['ship_id'] == activeShip['def_ship_id']);
+				
 					
-					var sourceModules = BucketMechanics().createBucketFromString(activeShip['cargo']);
+				var sourceModules = BucketMechanics().createBucketFromString(activeShip['cargo']);
+				
+				activeShip['loadout'].split(',').forEach(function(moduleId) {
+					if(moduleId != '') // split returns an array containing '' as a single element when the string is empty
+						sourceModules.modifyContents(BucketMechanics().ITEM_TYPE_SHIP_MODULE, moduleId, 1);
+				});
+				
+				ShopUtil().getShopsAtStation(dataBox, plrRecord['location_id'], function(defShops, defShopItems) {
+					var defShop;
+					var defShopItem;
 					
-					activeShip['loadout'].split(',').forEach(function(moduleId) {
-						if(moduleId != '') // split returns an array containing '' as a single element when the string is empty
-							sourceModules.modifyContents(BucketMechanics().ITEM_TYPE_SHIP_MODULE, moduleId, 1);
-					});
-					
-					ShopUtil().getShopsAtStation(dataBox, plrRecord['location_id'], function(defShops, defShopItems) {
-						var defShop;
-						var defShopItem;
+					// Verify buy modules and add them to our source
+					for(let i = 0; i < input.buyModules.length; i++) {
+						defShop = defShops.find(e => e['shop_id'] == input.buyModules[i].shopId);
+						defShopItem = defShopItems.find(e => e['shop_item_id'] == input.buyModules[i].shopItemId && e['shop_id'] == input.buyModules[i].shopId);
 						
-						// Verify buy modules and add them to our source
-						for(let i = 0; i < input.buyModules.length; i++) {
-							defShop = defShops.find(e => e['shop_id'] == input.buyModules[i].shopId);
-							defShopItem = defShopItems.find(e => e['shop_item_id'] == input.buyModules[i].shopItemId && e['shop_id'] == input.buyModules[i].shopId);
-							
-							if(undefined == defShop || undefined == defShopItem) {
-								output.messages.push("Buying an item not at your station");
-								callback(output);
-								return;
-							}
-							
-							if(defShopItem['output_item_type'] != BucketMechanics().ITEM_TYPE_SHIP_MODULE) {
-								Logger().log(Logger().ERROR, "Buying an item that isn't a module");
-								callback(output);
-								return;
-							}
-							
-							if(defShopItem['input_item_type'] == BucketMechanics().ITEM_TYPE_CREDITS) {
-								newCredits -= defShopItem['input_item_quantity'];
-							} else {
-								// TODO
-								output.messages.push("Only credit prices are supported currently.");
-								callback(output);
-								return;
-							}
-							
-							sourceModules.modifyContents(
-								BucketMechanics().ITEM_TYPE_SHIP_MODULE,
-								defShopItem['output_item_id'],
-								defShopItem['output_item_quantity']
-							);
-						};
+						if(undefined == defShop || undefined == defShopItem) {
+							output.messages.push("Buying an item not at your station");
+							callback(output);
+							return;
+						}
 						
-						// TODO more basic validation, but we're moving on to the meat here
-						// Source modules now contains all modules that need to be accounted for
+						if(defShopItem['output_item_type'] != BucketMechanics().ITEM_TYPE_SHIP_MODULE) {
+							Logger().log(Logger().ERROR, "Buying an item that isn't a module");
+							callback(output);
+							return;
+						}
+						
+						if(defShopItem['input_item_type'] == BucketMechanics().ITEM_TYPE_CREDITS) {
+							newCredits -= defShopItem['input_item_quantity'];
+						} else {
+							// TODO
+							output.messages.push("Only credit prices are supported currently.");
+							callback(output);
+							return;
+						}
+						
+						sourceModules.modifyContents(
+							BucketMechanics().ITEM_TYPE_SHIP_MODULE,
+							defShopItem['output_item_id'],
+							defShopItem['output_item_quantity']
+						);
+					};
+					
+					// Source modules now contains all modules that need to be accounted for
+					
+					DefShipsDAO().getShips(dataBox, function(defShips) {
+						var defShip = defShips.find(e => e['ship_id'] == activeShip['def_ship_id']);
 						
 						// Check that player is selling items they already have, we don't care if they're buying and selling
 						DefShipModulesDAO().getShipModules(dataBox, function(defShipModules) {
@@ -175,7 +159,7 @@ module.exports = function() {
 							var quantity;
 							var handledModuleIds = [];
 							
-							for(let i = 0; i < input.sellModules.lenth; i++) {
+							for(let i = 0; i < input.sellModules.length; i++) {
 								if(handledModuleIds.includes(input.sellModules[i])) {
 									continue;
 								}

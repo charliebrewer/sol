@@ -167,5 +167,16 @@ SolGame.InfoDiv = {
 		</div>`;
 		
 		SolGame.InfoDiv.getObj().html(inventoryTemplate({ credits : SolGame.PlayerData.playerRecord.credits }));
+	},
+	
+	modifyModules : function() {
+		SolGame.InfoDiv.clear();
+		
+		const modifyModulesTemplate = () => `
+		<div class='solModifyModules'>
+			<input type="submit" value="Modify" onclick="SolGame.ShipController().modifyModules()" />
+		</div>`;
+		
+		SolGame.InfoDiv.getObj().html(modifyModulesTemplate());
 	}
 };

@@ -8,7 +8,9 @@ SolGame.models = {
 		CMD_ACTIVATE_SHOP_ITEM       : {code : 210, useCmdCache : false},
 		CMD_ACCEPT_QUEST             : {code : 220, useCmdCache : false},
 		CMD_COMPLETE_QUEST           : {code : 230, useCmdCache : false},
-		CMD_PLOT_ROUTE               : {code : 310, useCmdCache : false}
+		CMD_PLOT_ROUTE               : {code : 310, useCmdCache : false},
+		CMD_SET_ACTIVE_SHIP          : {code : 350, useCmdCache : false},
+		CMD_MODIFY_MODULES           : {code : 360, useCmdCache : false}
 	},
 	
 	cmdCache : {
@@ -128,5 +130,9 @@ SolGame.models = {
 			SolGame.models.cmdCache.clrData(SolGame.models.commandCodes.CMD_GET_ALL_PLAYER_DATA.code);
 			callback(output);
 		});
+	},
+	
+	modifyModules : function(data, callback) {
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_MODIFY_MODULES, data, callback);
 	}
 };

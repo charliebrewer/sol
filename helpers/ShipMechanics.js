@@ -3,9 +3,11 @@ var BucketMechanics = require('./BucketMechanics');
 module.exports = function() {
 	var module = {};
 	
-	module.MAX_MODULE_TIER = 10;
-	
 	module.MODULE_TYPE_CARGO = 1;
+	module.MODULE_TYPE_ENGINE = 2;
+	module.MODULE_TYPE_FUEL_TANK = 3;
+	module.MODULE_TYPE_SHIELD = 4;
+	module.MODULE_TYPE_WEAPON = 5;
 	
 	/**
 	 * Array of item types that are stored in a ship's cargo.
@@ -27,9 +29,50 @@ module.exports = function() {
 		 return module.cargoItemTypes.includes(itemType);
 	};
 	
+	/**
+	 * Compares the loadout of a player ship against the allowed loadout of the definition.
+	 * This currently only supports exact equipping of modules.
+	 *
+	 * plrShipLoadout = [1,2,3,4,5]; // def_ship_modules ids
+	 * defShipConfiguration = '1:2,3:4'; // module_type:module_tier, duplicates allowed
+	 */
+	module.validateLoadout = function(plrShipLoadout, defShipConfiguration, defShipModules) {
+		var dslObj = {};
+		
+		defShipConfiguration.split(',').forEach(function(typeTier) {
+			var ttArr = typeTier.split(':');
+			
+			if(undefined == dslObj[ttArr[0]])
+				dslObj[ttArr[0]] = {};
+			if(undefined == dslObj[ttArr[0]][ttArr[1]])
+				dslObj[ttArr[0]][ttArr[1]] = 0;
+			
+			dslObj[ttArr[0]][ttArr[1]] += 1;
+		});
+		
+		var defShipModule;
+		for(let i = 0; i < plrShipLoadout.length; i++) {
+			defShipModule = defShipModules.find(e => e['ship_module_id'] == plrShipLoadout[i]);
+			
+			if(undefined == defShipModule)
+				return false;
+			if(undefined == dslObj[defShipModule['module_type']])
+				return false;
+			if(undefined == dslObj[defShipModule['module_type']][defShipModule['module_tier']])
+				return false;
+			if(0 >= dslObj[defShipModule['module_type']][defShipModule['module_tier']])
+				return false;
+			
+			dslObj[defShipModule['module_type']][defShipModule['module_tier']] -= 1;
+		}
+		
+		return true;
+	};
+	
 	module.getCargoCapacity = function(plrShip, defShipModules) {
-		return 100; // TODO temp hack
 		var plrShipModules = plrShip['loadout'].split(',');
+		if(1 == plrShipModules.length && plrShipModules[0] == '')
+			return 0; // No modules equipped
 		
 		var capacity = 0;
 		
@@ -43,48 +86,6 @@ module.exports = function() {
 		});
 		
 		return capacity;
-	};
-	
-	/**
-	 * Equips a module to a ship by modifying the 'loadout' field of the plrShip
-	 * parameter.
-	 *
-	 * @return bool Success or failure to add the module.
-	 */
-	module.equipModule = function(moduleId, plrShip, defShip, defShipModules) {
-		var plrShipModules = plrShip['loadout'].split(',');
-		// TODO get this out of a bucket... this is a bad code smell that we're using buckets like this for modules
-		var defShipLoadout = BucketMechanics().createBucketFromString(defShip['loadout']);
-		var moduleToEquip  = defShipModules.find(e => e['ship_module_id'] == moduleId);
-		
-		// First "equip" all existing modules to the ship definition loadout
-		var plrShipModule;
-		plrShipModules.forEach(function(plrShipModuleId) {
-			plrShipModule = defShipModules.find(e => e['ship_module_id'] == plrShipModuleId);
-			
-			if(plrShipModule['module_type'] == moduleToEquip['module_type']) {
-				// Find the smallest slot this can occupy
-				for(let i = plrShipModule['module_tier']; i <= module.MAX_MODULE_TIER; i++) {
-					if(0 < defShipLoadout.getItemQuantity(plrShipModule['module_type'], plrShipModule['module_tier'])) {
-						defShipLoadout.modifyContents(plrShipModule['module_type'], plrShipModule['module_tier'], -1);
-						break;
-					}
-				}
-			}
-		});
-		
-		// We have "equipped" all the existing modules, see if we can equip this one
-		for(let i = moduleToEquip['module_tier']; i <= module.MAX_MODULE_TIER; i++) {
-			if(0 < defShipLoadout.getItemQuantity(moduleToEquip['module_type'], moduleToEquip['module_tier'])) {
-				// Success, there is room for this module
-				plrShipModules.push(moduleToEquip['ship_module_id']);
-				plrShip['loadout'] = plrShipModules.join(',');
-				
-				return true;
-			}
-		}
-		
-		return false;
 	};
 	
 	return module;

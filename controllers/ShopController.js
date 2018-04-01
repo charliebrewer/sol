@@ -6,6 +6,7 @@ module.exports = function() {
 	var module = {};
 	
 	module.getShopsAtStation = function(dataBox, input, output, callback) {
+		// TODO just call ShopUtil to get this information
 		output.data.defShops = [];
 		output.data.defShopItems = [];
 		

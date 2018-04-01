@@ -1,5 +1,8 @@
 var Logger = require('../helpers/Logger');
 
+var DefShopsDAO = require('../models/DefShopsDAO');
+var DefShopItemsDAO = require('../models/DefShopItemsDAO');
+
 module.exports = function() {
 	var module = {};
 	

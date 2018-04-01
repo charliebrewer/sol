@@ -4,7 +4,10 @@ module.exports = function() {
 	var module = {};
 	
 	module.MODULE_TYPE_CARGO = 1;
-	// weapon, shields, etc
+	module.MODULE_TYPE_ENGINE = 2;
+	module.MODULE_TYPE_FUEL_TANK = 3;
+	module.MODULE_TYPE_SHIELD = 4;
+	module.MODULE_TYPE_WEAPON = 5;
 	
 	/**
 	 * Array of item types that are stored in a ship's cargo.
@@ -31,13 +34,13 @@ module.exports = function() {
 	 * This currently only supports exact equipping of modules.
 	 *
 	 * plrShipLoadout = '1,2,3,4,5'; // def_ship_modules ids
-	 * defShipLoadout = '1:2,3:4'; // module_type:module_tier, duplicates allowed
+	 * defShipConfiguration = '1:2,3:4'; // module_type:module_tier, duplicates allowed
 	 */
-	module.validateLoadout = function(plrShipLoadout, defShipLoadout, defShipModules) {
+	module.validateLoadout = function(plrShipLoadout, defShipConfiguration, defShipModules) {
 		var plrShipModules = plrShipLoadout.split(',');
 		
 		var dslObj = {};
-		defShipLoadout.split(',').forEach(function(typeTier) {
+		defShipConfiguration.split(',').forEach(function(typeTier) {
 			var ttArr = typeTier.split(':');
 			
 			if(undefined == dslObj[ttArr[0]])

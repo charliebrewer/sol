@@ -1,5 +1,8 @@
+var DefShipsDAO = require('../models/DefShipsDAO');
 var PlayerDAO = require('../models/PlayerDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
+
+var ShopUtil = require('../utils/ShopUtil');
 
 var BucketMechanics = require('../helpers/BucketMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
@@ -123,9 +126,9 @@ module.exports = function() {
 						
 						// Verify buy modules and add them to our source
 						for(let i = 0; i < input.buyModules.length; i++) {
-							defShopItem = defShopItems.find(e => e['shop_item_id'] == buyModules[i].shopItemId);
+							defShopItem = defShopItems.find(e => e['shop_item_id'] == input.buyModules[i].shopItemId);
 							
-							if(!defShops.includes(buyModules[i].shopId) || undefined == defShopItem) {
+							if(!defShops.includes(input.buyModules[i].shopId) || undefined == defShopItem) {
 								output.messages.push("Buying an item not at your station");
 								callback(output);
 								return;
@@ -158,7 +161,7 @@ module.exports = function() {
 						
 						// Check that player is selling items they already have, we don't care if they're buying and selling
 						DefShipModulesDAO().getShipModules(dataBox, function(defShipModules) {
-							if(!ShipMechanics().validateLoadout(input.shipLoadout, defShip['loadout'], defShipModules)) {
+							if(!ShipMechanics().validateLoadout(input.shipLoadout, defShip['configuration'], defShipModules)) {
 								output.messages.push("Invalid loadout");
 								callback(output);
 								return;

@@ -20,7 +20,8 @@ module.exports = function() {
 		220 : QuestController().acceptQuest,
 		230 : QuestController().completeQuest,
 		310 : NavigationController().plotRoute,
-		350 : ShipController().setActiveShip
+		350 : ShipController().setActiveShip,
+		360 : ShipController().modifyModules
 	};
 	
 	/**

@@ -91,16 +91,11 @@ module.exports = function() {
 			return;
 		}
 		
-		// verify player is at a station, has an active ship, etc
-		/*
-		
-		
-		
-		*/
-		
 		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
-			if(plrRecord['location_type'] != 0) {
-				// TODO
+			if(plrRecord['location_type'] != NavigationMechanics().LOCATION_TYPE_STATION) {
+				output.messages.push("Must be at a station");
+				callback(output);
+				return;
 			}
 			
 			var newCredits = plrRecord['credits'];
@@ -116,12 +111,6 @@ module.exports = function() {
 				
 				DefShipsDAO().getShips(dataBox, function(defShips) {
 					var defShip = defShips.find(e => e['ship_id'] == activeShip['ship_id']);
-					
-					if(!ShipMechanics().validateLoadout(input.shipLoadout, defShip['loadout'])) {
-						output.messages.push("Invalid loadout");
-						callback(output);
-						return;
-					}
 					
 					var sourceModules = BucketMechanics().createBucketFromString(activeShip['cargo']);
 					
@@ -148,9 +137,13 @@ module.exports = function() {
 								return;
 							}
 							
-							// TODO handle other input types
 							if(defShopItem['input_item_type'] == BucketMechanics().ITEM_TYPE_CREDITS) {
 								newCredits -= defShopItem['input_item_quantity'];
+							} else {
+								// TODO
+								output.messages.push("Only credit prices are supported currently.");
+								callback(output);
+								return;
 							}
 							
 							sourceModules.modifyContents(
@@ -164,8 +157,13 @@ module.exports = function() {
 						// Source modules now contains all modules that need to be accounted for
 						
 						// Check that player is selling items they already have, we don't care if they're buying and selling
-						// TODO get module defs and sum their sale price
 						DefShipModulesDAO().getShipModules(dataBox, function(defShipModules) {
+							if(!ShipMechanics().validateLoadout(input.shipLoadout, defShip['loadout'], defShipModules)) {
+								output.messages.push("Invalid loadout");
+								callback(output);
+								return;
+							}
+							
 							var defShipModule;
 							var quantity;
 							var handledModuleIds = [];
@@ -248,8 +246,16 @@ module.exports = function() {
 								return;
 							}
 							
-							// Success! Store loadout and cargo, take away items per the shop, and adjust the players credits
-							// TODO
+							// Success! Store loadout and cargo, take away items per the shop (TODO), and adjust the players credits
+							plrRecord['credits'] = newCredits;
+							
+							PlayerDAO().updatePlayer(dataBox, plrRecord, function() {
+								activeShip['cargo'] = sourceModules.getItemsString();
+								
+								PlayerShipsDAO().storePlayerShip(dataBox, activeShip, function() {
+									callback(output);
+								});
+							});
 						});
 					});
 				});
@@ -259,17 +265,3 @@ module.exports = function() {
 	
 	return module;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-

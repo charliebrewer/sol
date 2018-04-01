@@ -96,8 +96,6 @@ module.exports = function() {
 					return;
 				}
 				
-				
-					
 				var sourceModules = BucketMechanics().createBucketFromString(activeShip['cargo']);
 				
 				activeShip['loadout'].split(',').forEach(function(moduleId) {

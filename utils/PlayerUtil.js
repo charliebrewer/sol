@@ -23,6 +23,19 @@ module.exports = function() {
 		PlayerDAO().modifyCredits(dataBox, credits, callback);
 	};
 	
+	/**
+	 * Returns the player's location. Currently this is just the information in
+	 * the player record, but we're piping this through a function because that
+	 * may change later.
+	 *
+	 * Calls callback with locationType and locationId as parameters.
+	 */
+	module.getPlayerLocation = function(dataBox, plrId, timeMs, callback) {
+		PlayerDAO().getPlayer(dataBox, plrId, function(plrRecord) {
+			callback(plrRecord['location_type'], plrRecord['location_id']);
+		});
+	};
+	
 	module.syncLocation = function(dataBox, callback) {
 		PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
 			PlayerRoutesDAO().getPlayerRoutes(dataBox, dataBox.getPlrId(), function(plrRoutes) {

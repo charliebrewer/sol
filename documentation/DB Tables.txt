@@ -1,0 +1,244 @@
+Technical DB Tables
+2017-11-20
+
+This document should serve as a place to list the different data stored in the database and the tables in which the data is stored.
+
+Table naming convention: For player specific data, the prefix of plr_ is used. For item definitions data of items the player can own, the prefix def_ is used. For configuration data, the prefix cfg_ is used.
+
+----------------------------------------------------------------
+---- Player Data
+----------------------------------------------------------------
+
+plr_accounts -- no name because this is an account not a character, the email is the identifying string
+- acct_id
+- email
+- time_created
+- last_login
+- time_zone
+- flags
+
+CREATE TABLE plr_players (
+	plr_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	acct_id INT UNSIGNED NOT NULL,
+	name VARCHAR(30) NOT NULL,
+	credits INT SIGNED NOT NULL DEFAULT 0,
+	location_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	location_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	active_plr_ship_id INT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
+);
+
+CREATE TABLE plr_routes (
+	route_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	plr_id INT UNSIGNED NOT NULL,
+	plr_ship_id INT UNSIGNED NOT NULL DEFAULT 0,
+	destination_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	destination_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	min_x BIGINT SIGNED NOT NULL DEFAULT 0,
+	max_x BIGINT SIGNED NOT NULL DEFAULT 0,
+	min_y BIGINT SIGNED NOT NULL DEFAULT 0,
+	max_y BIGINT SIGNED NOT NULL DEFAULT 0,
+	time_end INT UNSIGNED NOT NULL DEFAULT 0,
+	route_data VARCHAR(4096) NOT NULL,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (plr_id),
+	INDEX USING BTREE (time_end),
+	CONSTRAINT FK_plr_id FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id)
+	-- TODO add a fk for plr ships
+);
+
+plr_generic_items -- this table will get very large, need to recycle records
+- generic_item_id
+- plr_id
+- item_type -- ship, module, commodity, etc
+- item_id
+- quantity
+- attributes
+- flags
+
+CREATE TABLE plr_ships (
+	plr_ship_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	plr_id INT UNSIGNED NOT NULL,
+	def_ship_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	loadout VARCHAR(1000) NOT NULL,
+	cargo VARCHAR(1000) NOT NULL,
+	location_type INT UNSIGNED NOT NULL DEFAULT 0,
+	location_id INT UNSIGNED NOT NULL DEFAULT 0,
+	is_active INT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (plr_id),
+	FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id),
+	FOREIGN KEY (def_ship_id) REFERENCES def_ships(ship_id),
+	CONSTRAINT plr_ship UNIQUE (plr_id, def_ship_id)
+);
+
+unique key plr_id def_ship_id
+
+plr_flight_log -- table for observations made by the player while offline
+- flight_log_id
+- plr_id
+- interaction_data -- string of JSON that has information like if a scan took place, scan data, hails, etc
+- timestamp
+- route_data -- a couple of bezier curves for each ship
+- flags
+
+CREATE TABLE plr_quests (
+	plr_quest_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	plr_id INT UNSIGNED NOT NULL,
+	def_commodity_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	commodity_quantity SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	total_value INT UNSIGNED NOT NULL DEFAULT 0,
+	start_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	max_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	completed_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	destination_station_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (plr_id),
+	FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id),
+	FOREIGN KEY (def_commodity_id) REFERENCES def_commodities(commodity_id),
+	FOREIGN KEY (destination_station_id) REFERENCES def_stations(station_id)
+);
+
+plr_warrants
+- warrant_id
+- plr_id
+- law_id
+- notes
+- bounty_reward
+- bounty_description
+- created_by_plr_id
+- time_created
+- flags
+
+----------------------------------------------------------------
+---- Definitions Data
+----------------------------------------------------------------
+
+CREATE TABLE def_celestial_bodies (
+	celestial_body_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(30) NOT NULL,
+	mass INT UNSIGNED NOT NULL DEFAULT 0, -- Number of Earth masses times 1000
+	radius INT UNSIGNED NOT NULL, -- Radius of body in meters
+	img_url VARCHAR(100) NOT NULL,
+	parent_body_id SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- 0 means the sun
+	distance_from_parent INT UNSIGNED NOT NULL,
+	flags SMALLINT NOT NULL DEFAULT 0,
+	CONSTRAINT FK_CelestialParentBody FOREIGN KEY (parent_body_id) REFERENCES def_celestial_bodies(celestial_body_id)
+);
+
+CREATE TABLE def_stations (
+	station_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(30) NOT NULL,
+	img_url VARCHAR(100) NOT NULL,
+	parent_body_id SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- 0 means the sun
+	distance_from_parent INT UNSIGNED NOT NULL,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	CONSTRAINT FK_CelestialParentBody FOREIGN KEY (parent_body_id) REFERENCES def_celestial_bodies(celestial_body_id)
+);
+
+CREATE TABLE def_shops (
+	shop_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(30) NOT NULL,
+	station_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
+);
+
+CREATE TABLE def_shop_items (
+	shop_item_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	shop_id SMALLINT UNSIGNED NOT NULL,
+	input_item_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	input_item_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	input_item_quantity INT SIGNED NOT NULL DEFAULT 0,
+	output_item_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	output_item_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	output_item_quantity INT SIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (shop_id),
+	FOREIGN KEY (shop_id) REFERENCES def_shops(shop_id)
+);
+
+CREATE TABLE def_commodities (
+	commodity_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	commodity_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	name VARCHAR(30) NOT NULL,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
+);
+INSERT INTO def_commodities VALUES (1, 0, 'Food', 0);
+INSERT INTO def_commodities VALUES (2, 0, 'Electronics', 0);
+INSERT INTO def_commodities VALUES (3, 0, 'Alcohol', 0);
+
+CREATE TABLE def_ship_modules (
+	ship_module_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(30) NOT NULL,
+	img_url VARCHAR(30) NOT NULL,
+	module_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	module_tier SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	mass INT UNSIGNED NOT NULL DEFAULT 0,
+	resource_draw SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	output SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- integer representing the output of this module, means different things per module_type
+	module_data VARCHAR(200) NOT NULL DEFAULT 0,
+	sell_price INT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
+);
+
+CREATE TABLE def_ships (
+	ship_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	name VARCHAR(30) NOT NULL,
+	img_url VARCHAR(30) NOT NULL,
+	mass SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	configuration VARCHAR(100) NOT NULL,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
+);
+
+
+
+def_buckets
+- bucket_id
+- name
+- flags
+
+CREATE TABLE def_bucket_items (
+	bucket_item_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	bucket_id SMALLINT UNSIGNED NOT NULL,
+	item_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	item_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	item_quantity INT SIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (bucket_id)
+	-- TODO add foreign key to def_buckets bucket_id
+);
+
+CREATE TABLE def_quests (
+	quest_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	station_id SMALLINT UNSIGNED NOT NULL,
+	commodity_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	cargo_value INT UNSIGNED NOT NULL DEFAULT 0,
+	min_cargo SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	max_cargo SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	min_reputation SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	max_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	destination_station_ids VARCHAR(30) NOT NULL, -- comma separated list of station ids
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	FOREIGN KEY (station_id) REFERENCES def_stations(station_id)
+);
+INSERT INTO def_quests VALUES (1, 1, 1, 0, 10, 1, 10, 1000, '2', 0);
+INSERT INTO def_quests VALUES (2, 2, 2, 0, 10, 1, 10, 1000, '1', 0);
+
+----------------------------------------------------------------
+---- Configuration Data
+----------------------------------------------------------------
+
+cfg_constants -- table for holding assorted constants
+- 
+
+cfg_economy
+
+cfg_laws
+- law_id
+- name
+- fine_min
+- fine_max
+- sentence_min
+- sentence_max
+- statute_of_limitations
+- flags

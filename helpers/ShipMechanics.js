@@ -33,13 +33,12 @@ module.exports = function() {
 	 * Compares the loadout of a player ship against the allowed loadout of the definition.
 	 * This currently only supports exact equipping of modules.
 	 *
-	 * plrShipLoadout = '1,2,3,4,5'; // def_ship_modules ids
+	 * plrShipLoadout = [1,2,3,4,5]; // def_ship_modules ids
 	 * defShipConfiguration = '1:2,3:4'; // module_type:module_tier, duplicates allowed
 	 */
 	module.validateLoadout = function(plrShipLoadout, defShipConfiguration, defShipModules) {
-		var plrShipModules = plrShipLoadout.split(',');
-		
 		var dslObj = {};
+		
 		defShipConfiguration.split(',').forEach(function(typeTier) {
 			var ttArr = typeTier.split(':');
 			
@@ -52,8 +51,8 @@ module.exports = function() {
 		});
 		
 		var defShipModule;
-		for(let i = 0; i < plrShipModules.length; i++) {
-			defShipModule = defShipModules.find(e => e['ship_module_id'] == plrShipModules[i]);
+		for(let i = 0; i < plrShipLoadout.length; i++) {
+			defShipModule = defShipModules.find(e => e['ship_module_id'] == plrShipLoadout[i]);
 			
 			if(undefined == defShipModule)
 				return false;
@@ -71,8 +70,9 @@ module.exports = function() {
 	};
 	
 	module.getCargoCapacity = function(plrShip, defShipModules) {
-		return 100; // TODO temp hack
 		var plrShipModules = plrShip['loadout'].split(',');
+		if(1 == plrShipModules.length && plrShipModules[0] == '')
+			return 0; // No modules equipped
 		
 		var capacity = 0;
 		

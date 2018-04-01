@@ -1,4 +1,5 @@
 var DefShipsDAO = require('../models/DefShipsDAO');
+var DefShipModulesDAO = require('../models/DefShipModulesDAO');
 var PlayerDAO = require('../models/PlayerDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
@@ -113,29 +114,32 @@ module.exports = function() {
 				}
 				
 				DefShipsDAO().getShips(dataBox, function(defShips) {
-					var defShip = defShips.find(e => e['ship_id'] == activeShip['ship_id']);
+					var defShip = defShips.find(e => e['ship_id'] == activeShip['def_ship_id']);
 					
 					var sourceModules = BucketMechanics().createBucketFromString(activeShip['cargo']);
 					
 					activeShip['loadout'].split(',').forEach(function(moduleId) {
-						sourceModules.modifyContents(BucketMechanics().ITEM_TYPE_SHIP_MODULE, moduleId, 1);
+						if(moduleId != '') // split returns an array containing '' as a single element when the string is empty
+							sourceModules.modifyContents(BucketMechanics().ITEM_TYPE_SHIP_MODULE, moduleId, 1);
 					});
 					
 					ShopUtil().getShopsAtStation(dataBox, plrRecord['location_id'], function(defShops, defShopItems) {
+						var defShop;
 						var defShopItem;
 						
 						// Verify buy modules and add them to our source
 						for(let i = 0; i < input.buyModules.length; i++) {
-							defShopItem = defShopItems.find(e => e['shop_item_id'] == input.buyModules[i].shopItemId);
+							defShop = defShops.find(e => e['shop_id'] == input.buyModules[i].shopId);
+							defShopItem = defShopItems.find(e => e['shop_item_id'] == input.buyModules[i].shopItemId && e['shop_id'] == input.buyModules[i].shopId);
 							
-							if(!defShops.includes(input.buyModules[i].shopId) || undefined == defShopItem) {
+							if(undefined == defShop || undefined == defShopItem) {
 								output.messages.push("Buying an item not at your station");
 								callback(output);
 								return;
 							}
 							
 							if(defShopItem['output_item_type'] != BucketMechanics().ITEM_TYPE_SHIP_MODULE) {
-								output.messages.push("Buying an item that isn't a module");
+								Logger().log(Logger().ERROR, "Buying an item that isn't a module");
 								callback(output);
 								return;
 							}
@@ -243,6 +247,7 @@ module.exports = function() {
 							// Set their loadout first because they might have changed cargo properties
 							activeShip['loadout'] = input.shipLoadout.join(',');
 							
+							// TODO get mass of modules
 							if(sourceModules.itemQuantitySum() > ShipMechanics().getCargoCapacity(activeShip, defShipModules)) {
 								output.messages.push("Not enough room in cargo");
 								callback(output);

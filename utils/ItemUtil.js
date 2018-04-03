@@ -41,13 +41,17 @@ module.exports = function() {
 		 *
 		 * Calls back with a bucket of items that were given to the player.
 		 */
-		item.giveToPlayer = function(dataBox, callback) {callback(BucketMechanics().createEmptyBucket())};
+		item.giveToPlayer = function(dataBox, callback) {callback(BucketMechanics().createEmptyBucket());};
+		item.takeFromPlr = function(dataBox, plrId, callback) {callback(BucketMechanics().createEmptyBucket());};
 		
 		/**
 		 * Calls back with an integer representing the amount of this item
 		 * that a player possesses.
 		 */
-		item.getPlrQuantity = function(dataBox, callback) {callback(0)};
+		item.getPlrQuantity = function(dataBox, callback) {callback(0);};
+		
+		item.canGive = function(dataBox, plrId, callback) {callback(true);};
+		item.canTake = function(dataBox, plrId, callback) {callback(true);};
 		
 		switch(itemType) {
 			case BucketMechanics().ITEM_TYPE_NOTHING:
@@ -64,7 +68,7 @@ module.exports = function() {
 						
 						var bucket = BucketMechanics().createBucketFromDef(defBucket, defBucketItems);
 						
-						module.giveBucketToPlayer(dataBox, bucket, function(flatBucket) {
+						module.giveBucketToPlr(dataBox, bucket, function(flatBucket) {
 							callback(flatBucket);
 						});
 					});
@@ -253,7 +257,7 @@ module.exports = function() {
 		});
 	};
 	
-	module.giveBucketToPlayer = function(dataBox, bucket, callback) {
+	module.giveBucketToPlr = function(dataBox, bucket, callback) {
 		module.flattenBucket(dataBox, bucket, function(flatBucket) {
 			var sum = flatBucket.itemQuantitySum();
 			
@@ -263,6 +267,30 @@ module.exports = function() {
 					
 					if(0 == sum)
 						callback(flatBucket);
+				});
+			});
+		});
+	};
+	
+	module.canGiveBucketToPlr = function(dataBox, plrId, bucket, callback) {
+		module.flattenBucket(dataBox, bucket, function(flatBucket) {
+			var sum = flatBucket.itemQuantitySum();
+			
+			if(0 == sum) {
+				callback(true);
+				return;
+			}
+			
+			flatBucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				module.getItem(itemType, itemId, itemQuantity).canGive(dataBox, plrId, function(canGive) {
+					if(!canGive) {
+						callback(false);
+					} else {
+						sum -= itemQuantity;
+						
+						if(0 >= sum)
+							callback(true);
+					}
 				});
 			});
 		});

@@ -15,18 +15,6 @@ var Logger = require('../helpers/Logger');
 module.exports = function() {
 	var module = {};
 	
-	// TODO remove this, it has been moved to BucketMechanics
-	module.ITEM_TYPE_NOTHING   = 0;
-	module.ITEM_TYPE_BUCKET    = 1;
-	module.ITEM_TYPE_CREDITS   = 2;
-	module.ITEM_TYPE_SHIP      = 3;
-	module.ITEM_TYPE_COMMODITY = 4;
-	/*
-	COMMODITY
-	MODULE
-	etc
-	*/
-	
 	/**
 	 * Creates a generic item that contains a number of abstracted properties
 	 * and functions. This is the primary way that items should be given and
@@ -62,11 +50,11 @@ module.exports = function() {
 		item.getPlrQuantity = function(dataBox, callback) {callback(0)};
 		
 		switch(itemType) {
-			case module.ITEM_TYPE_NOTHING:
+			case BucketMechanics().ITEM_TYPE_NOTHING:
 				item.name = "Nothing";
 				break;
 			
-			case module.ITEM_TYPE_BUCKET:
+			case BucketMechanics().ITEM_TYPE_BUCKET:
 				item.name = "Bucket";
 				
 				item.giveToPlayer = function(dataBox, callback) {
@@ -90,7 +78,7 @@ module.exports = function() {
 				
 				break;
 			
-			case module.ITEM_TYPE_CREDITS:
+			case BucketMechanics().ITEM_TYPE_CREDITS:
 				item.name = "Credits";
 				
 				item.giveToPlayer = function(dataBox, callback) {
@@ -112,7 +100,7 @@ module.exports = function() {
 				
 				break;
 			
-			case module.ITEM_TYPE_SHIP:
+			case BucketMechanics().ITEM_TYPE_SHIP:
 				item.name = "Ship";
 				
 				if(item.quantity > 0)
@@ -144,7 +132,7 @@ module.exports = function() {
 				
 				break;
 			
-			case module.ITEM_TYPE_COMMODITY:
+			case BucketMechanics().ITEM_TYPE_COMMODITY:
 				item.name = "Commodity";
 				
 				item.giveToPlayer = function(dataBox, callback) {
@@ -172,6 +160,34 @@ module.exports = function() {
 						
 						var shipCargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
 						callback(shipCargo.getItemQuantity(item.itemType, item.itemId));
+					});
+				};
+				
+				break;
+				
+			case BucketMechanics().ITEM_TYPE_SHIP_MODULE:
+				item.giveToPlayer = function(dataBox, callback) {
+					Logger().log(Logger().ERROR, "Attempting to give a module via ItemUtil");
+					return(BucketMechanics().createEmptyBucket());
+				};
+				
+				item.getPlrQuantity = function(dataBox, callback) {
+					// Get player's ships, and their active ship cargo
+					var sum = 0;
+					var cargoBucket;
+					
+					PlayerShipsDAO().getPlayerShips(dataBox, function(plrShips) {
+						plrShips.forEach(function(plrShip) {
+							cargoBucket = BucketMechanics().createBucketFromString(plrShip['cargo']);
+							sum += cargoBucket.getItemQuantity(item.itemType, item.itemId);
+							
+							plrShip['loadout'].split(',').forEach(function(moduleId) {
+								if(moduleId == item.itemId)
+									sum++;
+							});
+						});
+						
+						callback(sum);
 					});
 				};
 				

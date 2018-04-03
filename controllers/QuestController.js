@@ -80,7 +80,7 @@ module.exports = function() {
 							
 							PlayerQuestsDAO().storePlrQuest(dataBox, newQuest, function(pqOutput) {
 								var commodity = ItemUtil().getItem(
-									ItemUtil().ITEM_TYPE_COMMODITY,
+									BucketMechanics().ITEM_TYPE_COMMODITY,
 									input.questInstance.defCommodityId,
 									input.questInstance.commodityQuantity
 								);
@@ -137,7 +137,7 @@ module.exports = function() {
 				}
 				
 				var cargo = ItemUtil().getItem(
-					ItemUtil().ITEM_TYPE_COMMODITY,
+					BucketMechanics().ITEM_TYPE_COMMODITY,
 					plrQuest['def_commodity_id'],
 					plrQuest['commodity_quantity']
 				);
@@ -149,7 +149,7 @@ module.exports = function() {
 						cargo.giveToPlayer(dataBox, function() {});
 						
 						var reward = ItemUtil().getItem(
-							ItemUtil().ITEM_TYPE_CREDITS,
+							BucketMechanics().ITEM_TYPE_CREDITS,
 							0,
 							plrQuest['total_value']
 						);

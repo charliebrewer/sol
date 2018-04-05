@@ -1,5 +1,6 @@
 var DefCommoditiesDAO = require('../models/DefCommoditiesDAO');
 var DefQuestsDAO = require('../models/DefQuestsDAO');
+var DefShipModulesDAO = require('../models/DefShipModulesDAO');
 var PlayerDAO = require('../models/PlayerDAO');
 var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
@@ -51,43 +52,45 @@ module.exports = function() {
 					
 					var cargo = BucketMechanics().createBucketFromString(activeShip['cargo']);
 					
-					if(ShipMechanics().getCargoCapacity(activeShip, []) < cargo.itemQuantitySum() + input.questInstance.commodityQuantity) {
-						output.messages.push("Not enough room in cargo");
-						callback(output);
-						return;
-					}
-					
-					PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
-						if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || defQuest['station_id'] != plrRecord['location_id']) {
-							output.messages.push("Not at the correct station");
+					DefShipModulesDAO().getShipModules(dataBox, function(defShipModules) {
+						if(ShipMechanics().getCargoCapacity(activeShip, defShipModules) < cargo.itemQuantitySum() + input.questInstance.commodityQuantity) {
+							output.messages.push("Not enough room in cargo");
 							callback(output);
 							return;
 						}
 						
-						// Success, the player is accepting a valid quest, has enough room
-						
-						PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
-							var newQuest = PlayerQuestsDAO().newRow(
-								dataBox.getPlrId(),
-								input.questInstance.defCommodityId,
-								input.questInstance.commodityQuantity,
-								input.questInstance.totalValue,
-								Math.round(dataBox.getTimeMs() / 1000),
-								input.questInstance.maxTimeSc,
-								input.questInstance.destinationStationId,
-								plrQuests
-							);
+						PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
+							if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || defQuest['station_id'] != plrRecord['location_id']) {
+								output.messages.push("Not at the correct station");
+								callback(output);
+								return;
+							}
 							
-							PlayerQuestsDAO().storePlrQuest(dataBox, newQuest, function(pqOutput) {
-								var commodity = ItemUtil().getItem(
-									BucketMechanics().ITEM_TYPE_COMMODITY,
+							// Success, the player is accepting a valid quest, has enough room
+							
+							PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
+								var newQuest = PlayerQuestsDAO().newRow(
+									dataBox.getPlrId(),
 									input.questInstance.defCommodityId,
-									input.questInstance.commodityQuantity
+									input.questInstance.commodityQuantity,
+									input.questInstance.totalValue,
+									Math.round(dataBox.getTimeMs() / 1000),
+									input.questInstance.maxTimeSc,
+									input.questInstance.destinationStationId,
+									plrQuests
 								);
 								
-								commodity.giveToPlayer(dataBox, function(res) {
-									// output.data.commoditiesLoaded = res?
-									callback(output);
+								PlayerQuestsDAO().storePlrQuest(dataBox, newQuest, function(pqOutput) {
+									var commodity = ItemUtil().getItem(
+										BucketMechanics().ITEM_TYPE_COMMODITY,
+										input.questInstance.defCommodityId,
+										input.questInstance.commodityQuantity
+									);
+									
+									commodity.give(dataBox, dataBox.getPlrId(), function(res) {
+										// output.data.commoditiesLoaded = res?
+										callback(output);
+									});
 								});
 							});
 						});
@@ -145,8 +148,7 @@ module.exports = function() {
 				cargo.getPlrQuantity(dataBox, function(plrCargoQuantity) {
 					if(plrCargoQuantity >= plrQuest['commodity_quantity']) {
 						// Success, the player has completed the mission under the required time and has all the items
-						cargo.quantity *= -1;
-						cargo.giveToPlayer(dataBox, function() {});
+						cargo.take(dataBox, dataBox.getPlrId(), function() {});
 						
 						var reward = ItemUtil().getItem(
 							BucketMechanics().ITEM_TYPE_CREDITS,
@@ -154,7 +156,7 @@ module.exports = function() {
 							plrQuest['total_value']
 						);
 						
-						reward.giveToPlayer(dataBox, function() {});
+						reward.give(dataBox, dataBox.getPlrId(), function() {});
 						
 						callback(output);
 					}

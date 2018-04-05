@@ -89,16 +89,14 @@ module.exports = function() {
 					output.messages.push("Not enough input items");
 					callback(output);
 				} else {
-					inputItem.quantity *= -1;
-					
-					inputItem.giveToPlayer(dataBox, function(itemDelta) {
+					inputItem.take(dataBox, dataBox.getPlrId(), function(itemDelta) {
 						var outputItem = ItemUtil().getItem(
 							shopItemRecord['output_item_type'],
 							shopItemRecord['output_item_id'],
 							shopItemRecord['output_item_quantity']
 						);
 						
-						outputItem.giveToPlayer(dataBox, function(itemDelta) {
+						outputItem.give(dataBox, dataBox.getPlrId(), function(itemDelta) {
 							output.messages.push(itemDelta);
 							callback(output);
 						});

@@ -183,6 +183,16 @@ module.exports = function() {
 			return sum;
 		};
 		
+		bucket.numUniqueItems = function() {
+			var sum = 0;
+			
+			bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				sum++;
+			});
+			
+			return sum;
+		};
+		
 		/**
 		 * Function to generate the JSON object associated with this bucket's
 		 * contents. Does not encapsulate the other properties of the bucket.

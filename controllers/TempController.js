@@ -69,7 +69,7 @@ module.exports = function() {
 		var bucket = BucketMechanics().createEmptyBucket();
 		bucket.modifyContents(BucketMechanics().ITEM_TYPE_SHIP, 1, -1);
 		
-		ItemUtil().giveBucketToPlayer(dataBox, bucket, function(res) { console.log(res); });
+		ItemUtil().giveBucketToPlr(dataBox, dataBox.getPlrId(), bucket, function(res) { console.log(res); });
 		
 		
 		callback(output);

@@ -7,6 +7,7 @@ module.exports = function() {
 	module.ITEM_TYPE_SHIP        = 3;
 	module.ITEM_TYPE_COMMODITY   = 4;
 	module.ITEM_TYPE_SHIP_MODULE = 5;
+	module.ITEM_TYPE_R_CREDITS   = 6;
 	
 	module.createBucketFromDef = function(defBucket, defBucketItems) {
 		var bucket = module.createEmptyBucket();

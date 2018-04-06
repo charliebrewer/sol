@@ -1,5 +1,5 @@
 var PersistentDataAccess = require('../models/PersistentDataAccess');
-//var PlayerDAO = require('../models/PlayerDAO');
+var PlayerDAO = require('../models/PlayerDAO');
 var DefQuestsDAO = require('../models/DefQuestsDAO');
 var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
@@ -23,6 +23,18 @@ module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
+		
+		ItemUtil().getItem(BucketMechanics().ITEM_TYPE_R_CREDITS, 0, 100).getNum(dataBox, 100000, function(res) {
+			callback(res);return;
+			PlayerDAO().getPlayer(dataBox, 100000, function(plrRecord) {
+				output.data = plrRecord;
+				
+				callback(output);
+			});
+		});
+		
+		
+		return;
 		console.log('hey');
 		console.log(pda().dataBox.data);
 		DefinitionsController().getAllDefinitionsData(dataBox, input, output, function(data) {

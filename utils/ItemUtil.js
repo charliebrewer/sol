@@ -4,6 +4,7 @@ const BucketMechanics = require('../helpers/BucketMechanics');
 
 const ItemTypeCommodity = require('./items/ItemTypeCommodity');
 const ItemTypeCredits = require('./items/ItemTypeCredits');
+const ItemTypeRestrictedCredits = require('./items/ItemTypeRestrictedCredits');
 const ItemTypeShip = require('./items/ItemTypeShip');
 const ItemTypeShipModule = require('./items/ItemTypeShipModule');
 
@@ -130,6 +131,10 @@ module.exports = function() {
 				
 			case BucketMechanics().ITEM_TYPE_SHIP_MODULE:
 				ItemTypeShipModule().decorate(item);
+				break;
+			
+			case BucketMechanics().ITEM_TYPE_R_CREDITS:
+				ItemTypeRestrictedCredits().decorate(item);
 				break;
 			
 			default:

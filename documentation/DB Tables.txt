@@ -17,11 +17,15 @@ plr_accounts -- no name because this is an account not a character, the email is
 - time_zone
 - flags
 
+// Need fields for credits transferred today, the date at which today starts, if we've reset or not, too tired to think about this
 CREATE TABLE plr_players (
 	plr_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	acct_id INT UNSIGNED NOT NULL,
 	name VARCHAR(30) NOT NULL,
 	credits INT SIGNED NOT NULL DEFAULT 0,
+	r_credits INT SIGNED NOT NULL DEFAULT 0,
+	rr_credits INT SIGNED NOT NULL DEFAULT 0,
+	timezone SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	location_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	location_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	active_plr_ship_id INT UNSIGNED NOT NULL DEFAULT 0,

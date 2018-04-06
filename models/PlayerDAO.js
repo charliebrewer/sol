@@ -1,11 +1,12 @@
+var sprintf = require("sprintf-js").sprintf;
+
 var PersistentDataAccess = require('./PersistentDataAccess');
 
 module.exports = function() {
 	var module = {};
 	
-	module.tableName = 'plr_players';
-	module.keyName   = 'plr_id';
-	module.fields    = ['plr_id', 'acct_id', 'name', 'credits', 'location_type', 'location_id', 'flags'];
+	// The maximum restricted credits the player can claim per day
+	module.R_CREDIT_MAX = 1500;
 	
 	module.params = {
 		tableName      : 'plr_players',
@@ -25,6 +26,36 @@ module.exports = function() {
 	
 	module.modifyCredits = function(dataBox, creditDelta, callback) {
 		PersistentDataAccess().updateByDelta(module.params.tableName, module.params.keyName, dataBox.getPlrId(), 'credits', creditDelta, callback);
+	};
+	
+	module.giveRestrictedCredits = function(dataBox, plrId, delta, callback) {
+		var queryStr = sprintf(
+			"UPDATE %s SET rr_credits = rr_credits + GREATEST(0, ((%i + r_credits) - %i)), r_credits = least(%i, %i + r_credits) WHERE %s = %i",
+			module.params.tableName,
+			delta,
+			module.R_CREDIT_MAX,
+			module.R_CREDIT_MAX,
+			delta,
+			module.params.keyName,
+			plrId
+		);
+		
+		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
+		PersistentDataAccess().query(queryStr, callback);
+	};
+	
+	module.claimRestrictedCredits = function(dataBox, plrId, callback) {
+		var queryStr = sprintf(
+			"UPDATE %s SET credits = credits + r_credits, r_credits = LEAST(rr_credits, %i), rr_credits = GREATEST(0, rr_credits - %i) WHERE %s = %i",
+			module.params.tableName,
+			module.R_CREDIT_MAX,
+			module.R_CREDIT_MAX,
+			module.params.keyName,
+			plrId
+		);
+		
+		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
+		PersistentDataAccess().query(queryStr, callback);
 	};
 	
 	return module;

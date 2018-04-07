@@ -30,8 +30,10 @@ module.exports = function() {
 	
 	module.giveRestrictedCredits = function(dataBox, plrId, delta, callback) {
 		var queryStr = sprintf(
-			"UPDATE %s SET rr_credits = rr_credits + GREATEST(0, ((%i + r_credits) - %i)), r_credits = least(%i, %i + r_credits) WHERE %s = %i",
+			"UPDATE %s SET credits = credits + (LEAST(%i, %i + r_credits) - r_credits), rr_credits = rr_credits + GREATEST(0, ((%i + r_credits) - %i)), r_credits = LEAST(%i, %i + r_credits) WHERE %s = %i",
 			module.params.tableName,
+			module.R_CREDIT_MAX,
+			delta,
 			delta,
 			module.R_CREDIT_MAX,
 			module.R_CREDIT_MAX,
@@ -40,22 +42,29 @@ module.exports = function() {
 			plrId
 		);
 		
-		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
-		PersistentDataAccess().query(queryStr, callback);
+		PersistentDataAccess().query(queryStr, function(res) {
+			PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
+			
+			callback(res);
+		});
 	};
 	
-	module.claimRestrictedCredits = function(dataBox, plrId, callback) {
+	module.resetRestrictedCredits = function(dataBox, plrId, callback) {
 		var queryStr = sprintf(
-			"UPDATE %s SET credits = credits + r_credits, r_credits = LEAST(rr_credits, %i), rr_credits = GREATEST(0, rr_credits - %i) WHERE %s = %i",
+			"UPDATE %s SET credits = credits + LEAST(rr_credits, %i), r_credits = LEAST(rr_credits, %i), rr_credits = GREATEST(0, rr_credits - %i) WHERE %s = %i",
 			module.params.tableName,
+			module.R_CREDIT_MAX,
 			module.R_CREDIT_MAX,
 			module.R_CREDIT_MAX,
 			module.params.keyName,
 			plrId
 		);
 		
-		PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
-		PersistentDataAccess().query(queryStr, callback);
+		PersistentDataAccess().query(queryStr, function(res) {
+			PersistentDataAccess().clearCache(dataBox, module.params, dataBox.getPlrId());
+			
+			callback(res);
+		});
 	};
 	
 	return module;

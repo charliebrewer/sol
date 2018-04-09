@@ -6,6 +6,7 @@ var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var ItemUtil = require('../utils/ItemUtil');
+var PlayerUtil = require('../utils/PlayerUtil');
 var QuestUtil = require('../utils/QuestUtil');
 
 var BucketMechanics = require('../helpers/BucketMechanics');
@@ -17,6 +18,7 @@ module.exports = function() {
 	var module = {};
 	
 	module.MAX_ACTIVE_QUESTS = 10;
+	module.MAX_CMPLT_PCT_SLOP = 0.1;
 	
 	/**
 	 * Function to determine quests that the player can potentially accept.
@@ -37,15 +39,15 @@ module.exports = function() {
 		}
 		
 		QuestUtil().getQuestsAvailableToPlr(dataBox, function(defQuests) {
+			var defQuest = defQuests.find(e => e['quest_id'] == input.defQuestId);
+			
+			if(undefined == defQuest) {
+				output.messages.push("Invalid quest");
+				callback(output);
+				return;
+			}
+			
 			DefCommoditiesDAO().getCommodities(dataBox, function(defCommodities) {
-				var defQuest = defQuests.find(e => e['quest_id'] == input.defQuestId);
-				
-				if(undefined == defQuest) {
-					output.messages.push("Invalid quest");
-					callback(output);
-					return;
-				}
-				
 				if(!QuestMechanics().validateQuestInstance(defQuest, defCommodities, input.questInstance)) {
 					output.messages.push("Invalid quest instance");
 					callback(output);
@@ -129,25 +131,47 @@ module.exports = function() {
 				return;
 			}
 			
-			// The player who owns this quest is completing it, before we reward them just complete it
 			plrQuest['completed_time_sc'] = Math.round(dataBox.getTimeMs() / 1000);
-			PlayerQuestsDAO().storePlrQuest(dataBox, plrQuest, function() {});
 			
-			PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
-				if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type']) {
+			if(0 >= input.completionPct1000) {
+				// Player is failing this quest, just complete it and bounce
+				PlayerQuestsDAO().storePlrQuest(dataBox, plrQuest, function() {
+					callback(output);
+				});
+				
+				return;
+			}
+			
+			if(plrQuest['start_time_sc'] + plrQuest['max_time_sc'] < dataBox.getTimeMs() / 1000) {
+				output.messages.push("Took too long");
+				callback(output);
+				return;
+			}
+			
+			// completionPct1000 needs to be a multiple of the commodity quantity
+			var targetQuantity = (input.completionPct1000 / 1000) / (1 / plrQuest['commodity_quantity']);
+			if(module.MAX_CMPLT_PCT_SLOP < Math.abs(targetQuantity - Math.round(targetQuantity))) {
+				output.messages.push("completionPct1000 too sloppy");
+				callback(output);
+				return;
+			}
+			
+			targetQuantity = Math.round(targetQuantity);
+			if(0 == targetQuantity) {
+				output.messages.push("Can't complete with 0 commodities");
+				callback(output);
+				return;
+			}
+			
+			PlayerUtil().getPlayerLocation(dataBox, dataBox.getPlrId(), dataBox.getTimeMs(), function(locationType, locationId) {
+				if(NavigationMechanics().LOCATION_TYPE_STATION != locationType) {
 					output.messages.push("Not at a station");
 					callback(output);
 					return;
 				}
 				
-				if(plrRecord['location_id'] != plrQuest['destination_station_id']) {
+				if(plrQuest['destination_station_id'] != locationId) {
 					output.messages.push("Not at the destination station");
-					callback(output);
-					return;
-				}
-				
-				if(plrQuest['start_time_sc'] + plrQuest['max_time_sc'] < dataBox.getTimeMs() / 1000) {
-					output.messages.push("Took too long");
 					callback(output);
 					return;
 				}
@@ -158,21 +182,29 @@ module.exports = function() {
 					plrQuest['commodity_quantity']
 				);
 				
-				cargo.getPlrQuantity(dataBox, function(plrCargoQuantity) {
-					if(plrCargoQuantity >= plrQuest['commodity_quantity']) {
-						// Success, the player has completed the mission under the required time and has all the items
-						cargo.take(dataBox, dataBox.getPlrId(), function() {});
-						
-						var reward = ItemUtil().getItem(
-							BucketMechanics().ITEM_TYPE_CREDITS,
-							0,
-							plrQuest['total_value']
-						);
-						
-						reward.give(dataBox, dataBox.getPlrId(), function() {});
-						
+				cargo.getNum(dataBox, dataBox.getPlrId(), function(plrCargoQuantity) {
+					if(plrCargoQuantity < targetQuantity) {
+						output.messages.push("Not enough cargo");
 						callback(output);
+						return;
 					}
+					
+					// Success, the player has completed the mission under the required time and has all the items
+					plrQuest['completed_pct_1000'] = input.completionPct1000;
+					
+					PlayerQuestsDAO().storePlrQuest(dataBox, plrQuest, function() {
+						cargo.take(dataBox, dataBox.getPlrId(), function() {
+							var reward = ItemUtil().getItem(
+								plrQuest['reward_item_type'],
+								plrQuest['reward_item_id'],
+								plrQuest['reward_item_quantity']
+							);
+							
+							reward.give(dataBox, dataBox.getPlrId(), function() {
+								callback(output);
+							});
+						});
+					});
 				});
 			});
 		});

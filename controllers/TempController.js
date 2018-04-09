@@ -24,6 +24,18 @@ module.exports = function() {
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
 		
+		//module.generateQuestInstance = function(defQuest, defCommodities) {
+		DefQuestsDAO().getQuests(dataBox, function(defQuests) {
+			DefCommoditiesDAO().getCommodities(dataBox, function(defCommodities) {
+				var defQuest = defQuests[0];
+				var questInstance = QuestMechanics().generateQuestInstance(defQuest, defCommodities);
+				
+				var intput = {defQuestId : questInstance.defQuestId, questInstance : questInstance};
+				QuestController().acceptQuest(dataBox, intput, output, callback);
+			});
+		});
+		
+		return;
 		ItemUtil().getItem(BucketMechanics().ITEM_TYPE_R_CREDITS, 0, 100).getNum(dataBox, 100000, function(res) {
 			callback(res);return;
 			PlayerDAO().getPlayer(dataBox, 100000, function(plrRecord) {

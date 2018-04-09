@@ -6,6 +6,7 @@ var PlayerQuestsDAO = require('../models/PlayerQuestsDAO');
 var PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
 var ItemUtil = require('../utils/ItemUtil');
+var QuestUtil = require('../utils/QuestUtil');
 
 var BucketMechanics = require('../helpers/BucketMechanics');
 var NavigationMechanics = require('../helpers/NavigationMechanics');
@@ -17,6 +18,17 @@ module.exports = function() {
 	
 	module.MAX_ACTIVE_QUESTS = 10;
 	
+	/**
+	 * Function to determine quests that the player can potentially accept.
+	 */
+	module.getQuests = function(dataBox, input, output, callback) {
+		QuestUtil().getQuestsAvailableToPlr(dataBox, function(defQuests) {
+			output.data = defQuests;
+			
+			callback(output);
+		});
+	};
+	
 	module.acceptQuest = function(dataBox, input, output, callback) {
 		if(undefined == input.defQuestId || undefined == input.questInstance) {
 			output.messages.push("Invalid input");
@@ -24,12 +36,12 @@ module.exports = function() {
 			return;
 		}
 		
-		DefQuestsDAO().getQuests(dataBox, function(defQuests) {
+		QuestUtil().getQuestsAvailableToPlr(dataBox, function(defQuests) {
 			DefCommoditiesDAO().getCommodities(dataBox, function(defCommodities) {
-				var defQuest = defQuests.find(function(e) { return e['quest_id'] == input.defQuestId; });
+				var defQuest = defQuests.find(e => e['quest_id'] == input.defQuestId);
 				
 				if(undefined == defQuest) {
-					output.messages.push("Couldn't find quest: " + input.defQuestId);
+					output.messages.push("Invalid quest");
 					callback(output);
 					return;
 				}
@@ -58,39 +70,40 @@ module.exports = function() {
 							callback(output);
 							return;
 						}
-						
-						PlayerDAO().getPlayer(dataBox, dataBox.getPlrId(), function(plrRecord) {
-							if(NavigationMechanics().LOCATION_TYPE_STATION != plrRecord['location_type'] || defQuest['station_id'] != plrRecord['location_id']) {
-								output.messages.push("Not at the correct station");
-								callback(output);
-								return;
-							}
+
+						// Success, the player is accepting a valid quest, has enough room
+						PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
+							var recycleRecord = plrQuests.find(function(plrQuest) {
+								if(plrQuest['completed_time_sc'] < (dataBox.getTimeMs() / 1000) - QuestMechanics().RECYCLE_WINDOW_SC)
+									return true;
+								
+								return false;
+							});
 							
-							// Success, the player is accepting a valid quest, has enough room
+							var newQuest = PlayerQuestsDAO().newRow(
+								dataBox.getPlrId(),
+								input.questInstance.destinationStationId,
+								input.questInstance.defCommodityId,
+								input.questInstance.commodityQuantity,
+								input.questInstance.questValue,
+								input.questInstance.rewardItemType,
+								input.questInstance.rewardItemId,
+								input.questInstance.rewardItemQuantity,
+								Math.round(dataBox.getTimeMs() / 1000),
+								input.questInstance.maxTimeSc,
+								undefined == recycleRecord ? 0 : recycleRecord['plr_quest_id']
+							);
 							
-							PlayerQuestsDAO().getPlayerQuests(dataBox, function(plrQuests) {
-								var newQuest = PlayerQuestsDAO().newRow(
-									dataBox.getPlrId(),
+							PlayerQuestsDAO().storePlrQuest(dataBox, newQuest, function(pqOutput) {
+								var commodity = ItemUtil().getItem(
+									BucketMechanics().ITEM_TYPE_COMMODITY,
 									input.questInstance.defCommodityId,
-									input.questInstance.commodityQuantity,
-									input.questInstance.totalValue,
-									Math.round(dataBox.getTimeMs() / 1000),
-									input.questInstance.maxTimeSc,
-									input.questInstance.destinationStationId,
-									plrQuests
+									input.questInstance.commodityQuantity
 								);
 								
-								PlayerQuestsDAO().storePlrQuest(dataBox, newQuest, function(pqOutput) {
-									var commodity = ItemUtil().getItem(
-										BucketMechanics().ITEM_TYPE_COMMODITY,
-										input.questInstance.defCommodityId,
-										input.questInstance.commodityQuantity
-									);
-									
-									commodity.give(dataBox, dataBox.getPlrId(), function(res) {
-										// output.data.commoditiesLoaded = res?
-										callback(output);
-									});
+								commodity.give(dataBox, dataBox.getPlrId(), function(res) {
+									// output.data.commoditiesLoaded = res?
+									callback(output);
 								});
 							});
 						});
@@ -101,7 +114,7 @@ module.exports = function() {
 	};
 	
 	module.completeQuest = function(dataBox, input, output, callback) {
-		if(undefined == input.plrQuestId) {
+		if(undefined == input.plrQuestId || undefined == input.completionPct1000) {
 			output.messages.push("Invalid input");
 			callback(output);
 			return;
@@ -111,7 +124,7 @@ module.exports = function() {
 			var plrQuest = plrQuests.find(e => e['plr_quest_id'] == input.plrQuestId);
 			
 			if(undefined == plrQuest || plrQuest['completed_time_sc'] != 0) {
-				output.messages.push("Invalid quest.");
+				output.messages.push("Invalid quest");
 				callback(output);
 				return;
 			}

@@ -19,31 +19,36 @@ module.exports = function() {
 	
 	module.newRow = function(
 		plrId,
+		destinationStationId,
 		defCommodityId,
 		commodityQuantity,
-		totalValue,
+		questValue,
+		rewardItemType,
+		rewardItemId,
+		rewardItemQuantity,
 		startTimeSc,
 		maxTimeSc,
-		destinationStationId,
-		plrQuests = []
+		recyclePlrQuestId = 0
 	) {
 		var row = {};
 		
 		row.plr_id                 = plrId;
+		row.destination_station_id = destinationStationId;
 		row.def_commodity_id       = defCommodityId;
 		row.commodity_quantity     = commodityQuantity;
-		row.total_value            = totalValue;
+		row.quest_value            = questValue;
+		row.reward_item_type       = rewardItemType;
+		row.reward_item_id         = rewardItemId;
+		row.reward_item_quantity   = rewardItemQuantity;
 		row.start_time_sc          = startTimeSc;
 		row.max_time_sc            = maxTimeSc;
-		row.destination_station_id = destinationStationId;
 		
 		row.completed_time_sc      = 0;
+		row.completed_pct_1000     = 0;
 		row.flags                  = 0;
 		
-		var oldQuest = plrQuests.find(e => 0 != e['completed_time_sc']);
-		if(undefined != oldQuest) {
-			row.plr_quest_id = oldQuest['plr_quest_id'];
-		}
+		if(0 != recyclePlrQuestId)
+			row.plr_quest_id = recyclePlrQuestId;
 		
 		return row;
 	};

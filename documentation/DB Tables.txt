@@ -89,13 +89,17 @@ plr_flight_log -- table for observations made by the player while offline
 CREATE TABLE plr_quests (
 	plr_quest_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	plr_id INT UNSIGNED NOT NULL,
+	destination_station_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	def_commodity_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	commodity_quantity SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	total_value INT UNSIGNED NOT NULL DEFAULT 0,
+	quest_value INT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_quantity INT UNSIGNED NOT NULL DEFAULT 0,
 	start_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
 	max_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
 	completed_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
-	destination_station_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	completed_pct_1000 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	INDEX USING BTREE (plr_id),
 	FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id),
@@ -165,11 +169,12 @@ CREATE TABLE def_commodities (
 	commodity_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
 	commodity_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	name VARCHAR(30) NOT NULL,
+	sell_price INT UNSIGNED NOT NULL DEFAULT 0,
 	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
 );
-INSERT INTO def_commodities VALUES (1, 0, 'Food', 0);
-INSERT INTO def_commodities VALUES (2, 0, 'Electronics', 0);
-INSERT INTO def_commodities VALUES (3, 0, 'Alcohol', 0);
+INSERT INTO def_commodities VALUES (1, 0, 'Food', 0, 0);
+INSERT INTO def_commodities VALUES (2, 0, 'Electronics', 0, 0);
+INSERT INTO def_commodities VALUES (3, 0, 'Alcohol', 0, 0);
 
 CREATE TABLE def_ship_modules (
 	ship_module_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -214,19 +219,24 @@ CREATE TABLE def_bucket_items (
 
 CREATE TABLE def_quests (
 	quest_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-	station_id SMALLINT UNSIGNED NOT NULL,
-	commodity_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	cargo_value INT UNSIGNED NOT NULL DEFAULT 0,
-	min_cargo SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	max_cargo SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	min_reputation SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	max_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	notes VARCHAR(30) NOT NULL,
+	origin_station_ids VARCHAR(30) NOT NULL,
 	destination_station_ids VARCHAR(30) NOT NULL, -- comma separated list of station ids
-	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	FOREIGN KEY (station_id) REFERENCES def_stations(station_id)
+	max_time_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	quest_value SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- the value of this quest
+	min_quest_value_sum SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	max_quest_value_sum SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- the max sum of value of previously completed quests
+	min_cmplt_pct_1000 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	max_cmplt_pct_1000 SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	cargo_commodity_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	cargo_quantity_min SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	cargo_quantity_max SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_quantity_min INT UNSIGNED NOT NULL DEFAULT 0,
+	reward_item_quantity_max INT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
 );
-INSERT INTO def_quests VALUES (1, 1, 1, 0, 10, 1, 10, 1000, '2', 0);
-INSERT INTO def_quests VALUES (2, 2, 2, 0, 10, 1, 10, 1000, '1', 0);
 
 ----------------------------------------------------------------
 ---- Configuration Data

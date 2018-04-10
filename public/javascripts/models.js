@@ -6,6 +6,7 @@ SolGame.models = {
 		CMD_GET_ALL_PLAYER_DATA      : {code : 110, useCmdCache : true},
 		CMD_GET_SHOPS_AT_STATION     : {code : 205, useCmdCache : true},
 		CMD_ACTIVATE_SHOP_ITEM       : {code : 210, useCmdCache : false},
+		CMD_GET_QUESTS               : {code : 215, useCmdCache : false},
 		CMD_ACCEPT_QUEST             : {code : 220, useCmdCache : false},
 		CMD_COMPLETE_QUEST           : {code : 230, useCmdCache : false},
 		CMD_PLOT_ROUTE               : {code : 310, useCmdCache : false},
@@ -109,6 +110,10 @@ SolGame.models = {
 	
 	getShopsAtStation : function(sId, callback) {
 		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_SHOPS_AT_STATION, {stationId : sId}, callback);
+	},
+	
+	getQuests : function(callback) {
+		SolGame.models.runCommand(SolGame.models.commandCodes.CMD_GET_QUESTS, {}, callback);
 	},
 	
 	// Update server functions

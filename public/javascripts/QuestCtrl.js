@@ -1,15 +1,16 @@
 SolGame.QuestCtrl = {
 	generatedQuests : [],
 	
-	generateQuests : function(stationId) {
+	generateQuests : function(callback) {
 		SolGame.QuestCtrl.generatedQuests = [];
 		
-		SolGame.DefinitionsData.defQuests.forEach(function(defQuest) {
-			if(defQuest['station_id'] == stationId)
+		SolGame.models.getQuests(function(defQuests) {
+			defQuests.forEach(function(defQuest) {
 				SolGame.QuestCtrl.generatedQuests.push(SolGame.Shared.QuestMechanics().generateQuestInstance(defQuest, SolGame.DefinitionsData.defCommodities));
+			});
+			
+			callback(SolGame.QuestCtrl.generatedQuests);
 		});
-		
-		return SolGame.QuestCtrl.generatedQuests;
 	},
 	
 	acceptGeneratedQuest : function(index, callback) {

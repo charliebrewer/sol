@@ -15,7 +15,7 @@ SolGame.InfoDiv = {
 		<div class='solPlrQuest'>
 			<span>Quantity: ${cQuantity}</span>
 			<span>Destination: ${destinationStationId}</span>
-			<input type="submit" value="Complete" onclick="SolGame.models.completeQuest({plrQuestId : ${plrQuestId}}, function() {})" />
+			<input type="submit" value="Complete" onclick="SolGame.models.completeQuest({plrQuestId : ${plrQuestId}, completionPct1000: 1000}, function() {})" />
 		</div>`;
 		
 		var output = [];
@@ -44,34 +44,26 @@ SolGame.InfoDiv = {
 		
 		var stationId = SolGame.PlayerData.playerRecord.location_id;
 		
-		var questInstances = SolGame.QuestCtrl.generateQuests(stationId);
-		
-		/*
-		quest.defCommodityId = defCommodityId;
-		quest.commodityQuantity = commodityQuantity;
-		quest.totalValue = totalValue;
-		quest.maxTimeSc = maxTimeSc;
-		quest.destinationStationId = destinationStationId;
-		*/
-		
-		const questTemplate = ({ destinationStationId, totalValue, generatedQuestIndex }) => `
-		<div class='solQuestInstance'>
-			<span>Destination: ${destinationStationId}</span>
-			<span>Total Value: ${totalValue}</span>
-			<input type="submit" value="Accept" onclick="SolGame.QuestCtrl.acceptGeneratedQuest(${generatedQuestIndex}, function() {})" />
-		</div>`;
-		
-		var output = [];
-		
-		for(let i = 0; i < questInstances.length; i++) {
-			questInstances[i].generatedQuestIndex = i;
-			output.push(questTemplate(questInstances[i]));
-		}
-		
-		if(output.length == 0)
-			output.push("No quests available at this station.");
-		
-		SolGame.InfoDiv.getObj().html(output.join('<br>'));
+		SolGame.QuestCtrl.generateQuests(function(questInstances) {
+			const questTemplate = ({ destinationStationId, rewardItemQuantity, generatedQuestIndex }) => `
+			<div class='solQuestInstance'>
+				<span>Destination: ${destinationStationId}</span>
+				<span>Total Value: ${rewardItemQuantity}</span>
+				<input type="submit" value="Accept" onclick="SolGame.QuestCtrl.acceptGeneratedQuest(${generatedQuestIndex}, function() {})" />
+			</div>`;
+			
+			var output = [];
+			
+			for(let i = 0; i < questInstances.length; i++) {
+				questInstances[i].generatedQuestIndex = i;
+				output.push(questTemplate(questInstances[i]));
+			}
+			
+			if(output.length == 0)
+				output.push("No quests available at this station.");
+			
+			SolGame.InfoDiv.getObj().html(output.join('<br>'));
+		});
 	},
 	
 	showStations : function() {

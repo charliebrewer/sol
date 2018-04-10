@@ -157,8 +157,8 @@ module.exports = function() {
 			}
 			
 			targetQuantity = Math.round(targetQuantity);
-			if(0 == targetQuantity) {
-				output.messages.push("Can't complete with 0 commodities");
+			if(0 >= targetQuantity || targetQuantity > plrQuest['commodity_quantity']) {
+				output.messages.push("Invalid commodity quantity");
 				callback(output);
 				return;
 			}
@@ -179,7 +179,7 @@ module.exports = function() {
 				var cargo = ItemUtil().getItem(
 					BucketMechanics().ITEM_TYPE_COMMODITY,
 					plrQuest['def_commodity_id'],
-					plrQuest['commodity_quantity']
+					targetQuantity
 				);
 				
 				cargo.getNum(dataBox, dataBox.getPlrId(), function(plrCargoQuantity) {
@@ -190,14 +190,17 @@ module.exports = function() {
 					}
 					
 					// Success, the player has completed the mission under the required time and has all the items
-					plrQuest['completed_pct_1000'] = input.completionPct1000;
+					plrQuest['completed_pct_1000'] = Math.round(1000 * targetQuantity * (1 / plrQuest['commodity_quantity']));
 					
 					PlayerQuestsDAO().storePlrQuest(dataBox, plrQuest, function() {
 						cargo.take(dataBox, dataBox.getPlrId(), function() {
+							var rewardQuantity = plrQuest['reward_item_quantity'] * (plrQuest['completed_pct_1000'] / 1000);
+							rewardQuantity = Math.max(1, Math.round(rewardQuantity));
+							
 							var reward = ItemUtil().getItem(
 								plrQuest['reward_item_type'],
 								plrQuest['reward_item_id'],
-								plrQuest['reward_item_quantity']
+								rewardQuantity
 							);
 							
 							reward.give(dataBox, dataBox.getPlrId(), function() {

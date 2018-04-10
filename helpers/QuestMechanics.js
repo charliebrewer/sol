@@ -81,12 +81,6 @@ module.exports = function() {
 		return true;
 	};
 	
-	// For the completion of a single quest
-	module.getQuestCmpltPct = function(defQuest, plrQuest, plrCargoStr) {
-		// TODO
-		return 1;
-	};
-	
 	// For the completion rate of all of a player's completed quests
 	module.getPlrCmpltPct = function(currTimeMs, plrQuests) {
 		var c   = 0;

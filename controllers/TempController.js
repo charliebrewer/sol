@@ -24,7 +24,10 @@ module.exports = function() {
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
 		
-		//module.generateQuestInstance = function(defQuest, defCommodities) {
+		var intput = {plrQuestId : 5, completionPct1000 : 1000};
+		QuestController().completeQuest(dataBox, intput, output, callback);
+		return;
+		
 		DefQuestsDAO().getQuests(dataBox, function(defQuests) {
 			DefCommoditiesDAO().getCommodities(dataBox, function(defCommodities) {
 				var defQuest = defQuests[0];

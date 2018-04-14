@@ -22,6 +22,9 @@ SolGame.QuestCtrl = {
 		
 		var quest = SolGame.QuestCtrl.generatedQuests[index];
 		
-		SolGame.models.acceptQuest({'defQuestId' : quest.defQuestId, 'questInstance' : quest}, callback);
+		SolGame.models.acceptQuest({'defQuestId' : quest.defQuestId, 'questInstance' : quest}, function(res) {
+			SolGame.models.cmdCache.clrData(SolGame.models.commandCodes.CMD_GET_ALL_PLAYER_DATA.code);
+			SolGame.PlayerData.updatePlayerData(callback);
+		});
 	}
 };

@@ -10,7 +10,12 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
 	</head>
 	<body>
-		<div id="solContainer"></div>
+		<div id="solContainer">
+			<div id="solBase">
+				<input type="submit" value="Celestial Bodies" onclick="SolGame.DevClient.renderCelestialBodies(1);"></input>
+			</div>
+			<div id="solColumns"></div>
+		</div>
 	</body>
 	
 	<!-- <script src="javascripts/pixi_test.js"></script> -->
@@ -22,12 +27,8 @@
 	<script src="javascripts/PlayerData.js"></script>
 	<script src="javascripts/NavigationController.js"></script>
 	<script src="javascripts/ShipController.js"></script>
-	<script src="javascripts/ShopController.js"></script>
 	<script src="javascripts/QuestCtrl.js"></script>
 	<script src="javascripts/InfoDiv.js"></script>
 	<script src="javascripts/DevClient.js"></script>
 	<script src="javascripts/app.js"></script>
-	<script>
-		SolGame.DevClient.renderBasePage();
-	</script>
 </html>

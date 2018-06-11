@@ -28,6 +28,7 @@ SolGame.DevClient = {
 		if(tier > this.MAX_TIERS)
 			throw "Too many tiers";
 		
+		$('#outputText').val('');
 		for(let i = tier; i < this.MAX_TIERS; i++)
 			$('.container.tier_'+ i).remove();
 		
@@ -41,6 +42,10 @@ SolGame.DevClient = {
 		var container = $('#solColumns').html() + this.getContainer(tier, containerProperties);
 		
 		$('#solColumns').html(container);
+	},
+	
+	displayOutput : function(output) {
+		$('#outputText').val(JSON.stringify(output));
 	},
 	
 	////////////////////////////////////////////////////////////////
@@ -137,11 +142,39 @@ SolGame.DevClient = {
 				objArr.push({
 					name: `Type: ${shopItem.output_item_type}, ID: ${shopItem.output_item_id}`,
 					desc: `Type: ${shopItem.input_item_type}, ID: ${shopItem.input_item_id}`,
-					onclick: `alert('clicked on ${shopItem.shop_item_id}');`
+					onclick: `SolGame.models.activateShopItem({sell : 0, shopId : ${shopId}, shopItemId : ${shopItem.shop_item_id}}, SolGame.DevClient.displayOutput);`
 				});
 			});
 			
 			SolGame.DevClient.renderObjects(tier, `Shop Items at Shop ${shopId}`, objArr);
+		});
+	},
+	
+	////////////////////////////////////////////////////////////////
+	// Inventory
+	////////////////////////////////////////////////////////////////
+	
+	renderInventory : function(tier) {
+		var objArr = [];
+		
+		SolGame.models.getPlayerData(function(playerData) {
+			objArr.push({
+				name: 'Currency',
+				desc: `Credits: ${playerData.playerRecord.credits}`,
+				onclick: ``
+			});
+			objArr.push({
+				name: 'Ships',
+				desc: '',
+				onclick: `alert('thats what you think');`
+			});
+			objArr.push({
+				name: 'Player Location',
+				desc: '',
+				onclick: `alert('thats what you think');`
+			});
+			
+			SolGame.DevClient.renderObjects(tier, `Inventory`, objArr);
 		});
 	},
 };

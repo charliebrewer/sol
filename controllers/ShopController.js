@@ -84,7 +84,7 @@ module.exports = function() {
 			);
 			
 			// TODO handle selling of items
-			inputItem.getPlrQuantity(dataBox, function(num) {
+			inputItem.getNum(dataBox, dataBox.getPlrId(), function(num) {
 				if(num < shopItemRecord['input_item_quantity']) {
 					output.messages.push("Not enough input items");
 					callback(output);
@@ -97,7 +97,7 @@ module.exports = function() {
 						);
 						
 						outputItem.give(dataBox, dataBox.getPlrId(), function(itemDelta) {
-							output.messages.push(itemDelta);
+							output.data = itemDelta;
 							callback(output);
 						});
 					});

@@ -10,9 +10,13 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.5.1/pixi.min.js"></script>
 	</head>
 	<body>
+		<textarea id="outputText" type="text" rows="5" cols="100" readonly></textarea>
 		<div id="solContainer">
 			<div id="solBase">
 				<input type="submit" value="Celestial Bodies" onclick="SolGame.DevClient.renderCelestialBodies(1);"></input>
+				<br>
+				<input type="submit" value="Inventory" onclick="SolGame.DevClient.renderInventory(1);"></input>
+				<br>
 			</div>
 			<div id="solColumns"></div>
 		</div>

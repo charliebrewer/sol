@@ -131,7 +131,7 @@ SolGame.InfoDiv = {
 		<div class='solShopItem'>
 			<span>Type: ${itemType}</span>
 			<span>ID: ${itemId}</span>
-			<input type="submit" value="Purchase" onclick="SolGame.models.activateShopItem({sell : 0, shopId : ${sId}, shopItemId : ${siId}}, function() {})" />
+			<input type="submit" value="Purchase" onclick="SolGame.models.activateShopItem({sell : 0, shopItemId : ${siId}}, function() {})" />
 		</div>`;
 		
 		var output = [];

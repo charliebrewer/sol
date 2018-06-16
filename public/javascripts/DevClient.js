@@ -142,7 +142,7 @@ SolGame.DevClient = {
 				objArr.push({
 					name: `Type: ${shopItem.output_item_type}, ID: ${shopItem.output_item_id}`,
 					desc: `Type: ${shopItem.input_item_type}, ID: ${shopItem.input_item_id}`,
-					onclick: `SolGame.models.activateShopItem({sell : 0, shopId : ${shopId}, shopItemId : ${shopItem.shop_item_id}}, SolGame.DevClient.displayOutput);`
+					onclick: `SolGame.models.activateShopItem({sell : 0, shopItemId : ${shopItem.shop_item_id}}, SolGame.DevClient.displayOutput);`
 				});
 			});
 			

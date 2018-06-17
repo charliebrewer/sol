@@ -1,6 +1,7 @@
 var CelestialBodiesDAO = require('../models/CelestialBodiesDAO');
 var DefCommoditiesDAO = require('../models/DefCommoditiesDAO');
 var DefQuestsDAO = require('../models/DefQuestsDAO');
+var DefShipsDAO = require('../models/DefShipsDAO');
 var DefShopsDAO = require('../models/DefShopsDAO');
 var StationsDAO = require('../models/StationsDAO');
 
@@ -27,7 +28,11 @@ module.exports = function() {
 						DefShopsDAO().getShops(dataBox, function(defShops) {
 							output.data.defShops = defShops;
 							
-							callback(output);
+							DefShipsDAO().getShips(dataBox, function(defShips) {
+								output.data.defShips = defShips;
+							
+								callback(output);
+							});
 						});
 					});
 				});

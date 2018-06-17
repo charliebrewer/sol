@@ -110,6 +110,11 @@ SolGame.DevClient = {
 			onclick: `SolGame.DevClient.renderShopsAtStation(${tier + 1}, ${stationId});`
 		});
 		objArr.push({
+			name: 'View Quests',
+			desc: '',
+			onclick: `SolGame.DevClient.renderQuestsAtStation(${tier + 1}, ${stationId});`
+		});
+		objArr.push({
 			name: 'Navigate Here',
 			desc: '',
 			onclick: `alert('thats what you think');`
@@ -131,6 +136,22 @@ SolGame.DevClient = {
 			});
 			
 			SolGame.DevClient.renderObjects(tier, `Shops at Station ${stationId}`, objArr);
+		});
+	},
+	
+	renderQuestsAtStation : function(tier, stationId) {
+		SolGame.QuestCtrl.generateQuests(function(questInstances) {
+			var objArr = [];
+			
+			for(let i = 0; i < questInstances.length; i++) {
+				objArr.push({
+					name: 'Need name',
+					desc: JSON.stringify(questInstances[i]),
+					onclick: `SolGame.QuestCtrl.acceptGeneratedQuest(${i}, SolGame.DevClient.displayOutput);`
+				});
+			}
+			
+			SolGame.DevClient.renderObjects(tier, `Quests at station ${stationId}`, objArr);
 		});
 	},
 	
@@ -166,7 +187,7 @@ SolGame.DevClient = {
 			objArr.push({
 				name: 'Ships',
 				desc: '',
-				onclick: `alert('thats what you think');`
+				onclick: `SolGame.DevClient.renderPlrShips(${tier + 1});`
 			});
 			objArr.push({
 				name: 'Player Location',
@@ -175,6 +196,83 @@ SolGame.DevClient = {
 			});
 			
 			SolGame.DevClient.renderObjects(tier, `Inventory`, objArr);
+		});
+	},
+	
+	renderPlrShips : function(tier) {
+		SolGame.models.getPlayerData(function(plrData) {
+			SolGame.models.getDefinitionsData(function(defData) {
+				var objArr = [];
+				var defShip;
+				
+				plrData.playerShips.forEach(function(plrShip) {
+					defShip = defData.defShips.find(e => e['ship_id'] == plrShip['def_ship_id']);
+					
+					objArr.push({
+						name: `${defShip.name}`,
+						desc: ``,
+						onclick: `SolGame.DevClient.renderShipOptions(${tier + 1}, ${defShip.ship_id});`
+					});
+				});
+				
+				SolGame.DevClient.renderObjects(tier, `Player Ships`, objArr);
+			});
+		});
+	},
+	
+	renderShipOptions : function(tier, defShipId) {
+		var objArr = [];
+		
+		SolGame.models.getPlayerData(function(plrData) {
+			objArr.push({
+				name: `View Cargo`,
+				desc: ``,
+				onclick: `SolGame.DevClient.renderShipCargo(${tier + 1}, ${defShipId});`
+			});
+			objArr.push({
+				name: `View Loadout`,
+				desc: ``,
+				onclick: `SolGame.DevClient.renderShipLoadout(${tier + 1}, ${defShipId});`
+			});
+			objArr.push({
+				name: 'Outfit',
+				desc: '',
+				onclick: `alert('thats what you think');`
+			});
+			
+			SolGame.DevClient.renderObjects(tier, `Ship ${defShipId} Options`, objArr);
+		});
+	},
+	
+	renderShipCargo : function(tier, defShipId) {
+		var objArr = [];
+		
+		SolGame.models.getPlayerData(function(plrData) {
+			var plrShip = plrData.playerShips.find(e => e['def_ship_id'] == defShipId);
+			
+			objArr.push({
+				name: `TODO make items boxes`,
+				desc: JSON.stringify(plrShip['cargo']),
+				onclick: ``
+			});
+			
+			SolGame.DevClient.renderObjects(tier, `Ship ${defShipId} Cargo`, objArr);
+		});
+	},
+	
+	renderShipLoadout : function(tier, defShipId) {
+		var objArr = [];
+		
+		SolGame.models.getPlayerData(function(plrData) {
+			var plrShip = plrData.playerShips.find(e => e['def_ship_id'] == defShipId);
+			
+			objArr.push({
+				name: `TODO make loadout boxes`,
+				desc: plrShip['loadout'].split(','),
+				onclick: ``
+			});
+			
+			SolGame.DevClient.renderObjects(tier, `Ship ${defShipId} Cargo`, objArr);
 		});
 	},
 };

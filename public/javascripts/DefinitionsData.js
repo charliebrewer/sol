@@ -1,3 +1,4 @@
+// TODO DEPRECATED DO NOT USE
 SolGame.DefinitionsData = {
 	celestialBodies : [],
 	stations : [],

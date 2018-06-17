@@ -4,12 +4,14 @@ SolGame.QuestCtrl = {
 	generateQuests : function(callback) {
 		SolGame.QuestCtrl.generatedQuests = [];
 		
-		SolGame.models.getQuests(function(defQuests) {
-			defQuests.forEach(function(defQuest) {
-				SolGame.QuestCtrl.generatedQuests.push(SolGame.Shared.QuestMechanics().generateQuestInstance(defQuest, SolGame.DefinitionsData.defCommodities));
+		SolGame.models.getDefinitionsData(function(defData) {
+			SolGame.models.getQuests(function(defQuests) {
+				defQuests.forEach(function(defQuest) {
+					SolGame.QuestCtrl.generatedQuests.push(SolGame.Shared.QuestMechanics().generateQuestInstance(defQuest, defData.defCommodities));
+				});
+				
+				callback(SolGame.QuestCtrl.generatedQuests);
 			});
-			
-			callback(SolGame.QuestCtrl.generatedQuests);
 		});
 	},
 	

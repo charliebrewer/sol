@@ -1,0 +1,1 @@
+browserify ./public/javascripts/Shared.js -o ./public/javascripts/Sharedb.js -i ./data/DaoFactoryDB.js -i ./data/DaoFactoryMemcache.js

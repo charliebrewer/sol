@@ -1,4 +1,647 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+
+},{}],2:[function(require,module,exports){
+module.exports = function() {
+	var module = {};
+	
+	module.getData = function(id, callback) {
+		callback(null);
+	};
+	
+	module.setData = function(id, data, callback) {
+		callback(false);
+	};
+	
+	module.addData = function(id, data, callback) {
+		callback(false);
+	};
+	
+	module.delData = function(id, callback) {
+		callback(false);
+	};
+	
+	return module;
+};
+
+},{}],3:[function(require,module,exports){
+const DataSources = require('./DataSources');
+
+const DaoFactoryLocal = require('./DaoFactoryLocal');
+const DaoFactoryMemcache = require('./DaoFactoryMemcache');
+const DaoFactoryServer = require('./DaoFactoryServer');
+const DaoFactoryDB = require('./DaoFactoryDB');
+
+module.exports = function() {
+	var module = {};
+	
+	/**
+	 * Returns a dao factory of the associated source type.
+	 */
+	module.getDaoFactory = function(sourceType) {
+		switch(sourceType) {
+			case DataSources.SOURCE_LOCAL:
+				return DaoFactoryLocal();
+			break;
+			
+			case DataSources.SOURCE_MEMCACHE:
+				return DaoFactoryMemcache();
+			break;
+			
+			case DataSources.SOURCE_SERVER:
+				return DaoFactoryServer();
+			break;
+			
+			case DataSources.SOURCE_DB:
+				return DaoFactoryDB();
+			break;
+		}
+		
+		throw "Unhandled factory type: " + sourceType;
+	};
+	
+	return module;
+};
+
+},{"./DaoFactoryDB":1,"./DaoFactoryLocal":4,"./DaoFactoryMemcache":1,"./DaoFactoryServer":5,"./DataSources":7}],4:[function(require,module,exports){
+const DataSources = require('./DataSources');
+
+const LocalDao = require('./LocalDao');
+
+module.exports = function() {
+	var module = {};
+	
+	module.sourceType = DataSources.SOURCE_LOCAL;
+	
+	module.getDao = function(daoType) {
+		// We don't care about daoType here, all local daos are the same.
+		return LocalDao();
+	};
+	
+	return module;
+};
+
+},{"./DataSources":7,"./LocalDao":8}],5:[function(require,module,exports){
+const DataSources = require('./DataSources');
+
+const PlayerDaoServer = require('./ServerDaos/PlayerDaoServer');
+
+module.exports = function() {
+	var module = {};
+	
+	module.sourceType = DataSources.SOURCE_SERVER;
+	
+	module.getDao = function(daoType) {
+		switch(daoType) {
+			case DataSources.DAO_PLAYER:
+				return PlayerDaoServer();
+			break;
+		}
+	};
+	
+	return module;
+};
+
+},{"./DataSources":7,"./ServerDaos/PlayerDaoServer":9}],6:[function(require,module,exports){
+const DataSources = require('./DataSources');
+const DaoFactoryFactory = require('./DaoFactoryFactory');
+
+/**
+ * DataBox facade for requesting data from an arbitrary number of sources.
+ *
+ * Sources are bitmasks of DataSources.SOURCE_* that inform the DataBox
+ * where to request data and where to write data.
+ *
+ * Cache management is handled automatically when reading and writing data.
+ * While it is not recommended, you can define custom methods in a
+ * particular DAO and request that DAO through the DataBox to call the
+ * functions on it. Be sure to flush cache if the functions change state.
+ */
+module.exports = function() {
+	module.getDataBoxServerStandard = function() {
+		return module.getDataBox(
+			DataSources.SOURCE_LOCAL | DataSources.SOURCE_MEMCACHE | DataSources.SOURCE_DB,
+			DataSources.SOURCE_DB,
+			DataSources.SOURCE_LOCAL | DataSources.SOURCE_MEMCACHE
+		);
+	};
+	
+	module.getDataBoxServerNoWrite = function() {
+		return module.getDataBox(
+			DataSources.SOURCE_LOCAL | DataSources.SOURCE_MEMCACHE | DataSources.SOURCE_DB,
+			DataSources.SOURCE_LOCAL,
+			DataSources.SOURCE_NONE
+		);
+	};
+	
+	module.getDataBoxClientStandard = function() {
+		return module.getDataBox(
+			DataSources.SOURCE_LOCAL | DataSources.SOURCE_SERVER,
+			DataSources.SOURCE_NONE,
+			DataSources.SOURCE_LOCAL
+		);
+	};
+	
+	module.getDataBox = function(readSources, writeSources, cacheSources) {
+		var dataBox = {};
+		
+		// DAO Factory bitmasks
+		dataBox.readSources  = parseInt(readSources);
+		dataBox.writeSources = parseInt(writeSources);
+		dataBox.cacheSources = parseInt(cacheSources);
+		if(isNaN(dataBox.readSources) || isNaN(dataBox.writeSources) || isNaN(dataBox.cacheSources))
+			throw "Invalid DataBox sources";
+		
+		if(0 != (writeSources & DataSources.SOURCE_DB) && 0 == (cacheSources & DataSources.SOURCE_MEMCACHE))
+			throw "Cannot create data box that writes to db and doesn't clear memcache";
+		
+		dataBox.getData = function(daoType, id, callback) {
+			dataBox._getData(DataSources.SOURCE_NONE, daoType, id, callback);
+		};
+		
+		dataBox.setData = function(daoType, id, data, callback) {
+			dataBox._setData(DataSources.SOURCE_NONE, daoType, id, data, callback);
+		};
+		
+		dataBox.addData = function(daoType, id, data, callback) {
+			dataBox._addData(DataSources.SOURCE_NONE, daoType, id, data, callback);
+		};
+		
+		dataBox.delData = function(daoType, id, callback) {
+			dataBox._delData(DataSources.SOURCE_NONE, daoType, id, data, callback);
+		};
+		
+		dataBox.clearCache = function(daoType, id, callback) {
+			dataBox._clearCache(DataSources.SOURCE_NONE, daoType, id, callback);
+		};
+		
+		dataBox._daos = {
+			_daos : {},
+			
+			getDao : function(sourceType, daoType) {
+				return this._daos[this.getKey(sourceType, daoType)];
+			},
+			
+			setDao : function(sourceType, daoType, dao) {
+				this._daos[this.getKey(sourceType, daoType)] = dao;
+			},
+			
+			clrDao : function(sourceType, daoType) {
+				delete this._daos[this.getKey(sourceType, daoType)];
+			},
+			
+			getKey : function(sourceType, daoType) {
+				return sourceType + '_' + daoType;
+			}
+		};
+		
+		/**
+		 * Method to return a specific concrete dao. This function is exposed
+		 * so that custom behavior can be added to a dao and referenced later.
+		 */
+		dataBox._getDao = function(sourceType, daoType) {
+			if(0 == (sourceType & (dataBox.readSources | dataBox.writeSources | dataBox.cacheSources)))
+				throw "Cannot retrieve dao not associated with this DataBox";
+			
+			var dao = dataBox._daos.getDao(sourceType, daoType);
+			
+			if(undefined == dao) {
+				dao = DaoFactoryFactory().getDaoFactory(sourceType).getDao(daoType);
+				dataBox._daos.setDao(sourceType, daoType, dao);
+			}
+			
+			return dao;
+		};
+		
+		// sources, order of sources, function to call, set cache or clear cache
+		
+		dataBox._getData = function(prevSourceType, daoType, id, callback) {
+			var sourceType = DataSources.nextSourceType(prevSourceType, dataBox.readSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				callback(null);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.getData(id, function(output) {
+				if(null != output) {
+					dataBox._cacheData(sourceType, daoType, id, output, function() {
+						callback(output);
+					});
+					
+					return;
+				}
+				
+				dataBox._getData(sourceType, daoType, id, callback);
+			});
+		};
+		
+		dataBox._setData = function(prevSourceType, daoType, id, data, callback) {
+			var sourceType = DataSources.nextSourceType(prevSourceType, dataBox.writeSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				dataBox.clearCache(daoType, id, callback);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.setData(id, data, function() {
+				dataBox._setData(sourceType, daoType, id, data, callback);
+			});
+		};
+		
+		dataBox._addData = function(prevSourceType, daoType, id, data, callback) {
+			var sourceType = DataSources.nextSourceType(prevSourceType, dataBox.writeSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				dataBox.clearCache(daoType, id, callback);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.addData(id, data, function() {
+				dataBox._addData(sourceType, daoType, id, data, callback);
+			});
+		};
+		
+		dataBox._delData = function(prevSourceType, daoType, id, callback) {
+			var sourceType = DataSources.nextSourceType(prevSourceType, dataBox.writeSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				dataBox.clearCache(daoType, id, callback);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.delData(id, function() {
+				dataBox._delData(sourceType, daoType, id, callback);
+			});
+		};
+		
+		dataBox._cacheData = function(prevSourceType, daoType, id, data, callback) {
+			var sourceType = DataSources.prevSourceType(prevSourceType, dataBox.cacheSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				callback(true);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.setData(id, data, function() {
+				dataBox._cacheData(sourceType, daoType, id, data, callback);
+			});
+		};
+		
+		dataBox._clearCache = function(prevSourceType, daoType, id, callback) {
+			var sourceType = DataSources.nextSourceType(prevSourceType, dataBox.cacheSources);
+			
+			if(DataSources.SOURCE_NONE == sourceType) {
+				callback(true);
+				return;
+			}
+			
+			var dao = dataBox._getDao(sourceType, daoType);
+			
+			dao.delData(id, function() {
+				dataBox._clearCache(sourceType, daoType, id, callback);
+			});
+		};
+		
+		return dataBox;
+	};
+
+	return module;
+};
+
+},{"./DaoFactoryFactory":3,"./DataSources":7}],7:[function(require,module,exports){
+module.exports = {
+	SOURCE_NONE     : 0,
+	SOURCE_LOCAL    : 1,
+	SOURCE_MEMCACHE : 2,
+	SOURCE_SERVER   : 4,
+	SOURCE_DB       : 8,
+	SOURCE_ALL      : 255,
+	
+	/**
+	 * Returns the next numerically higher data source contained in the sources
+	 * bitmask. Returns SOURCE_NONE when there are no more sources.
+	 */
+	nextSourceType : function(currFactory, sources) {
+		if(0 == (sources & ~Math.max(0, currFactory * 2 - 1)))
+			return this.SOURCE_NONE;
+		
+		// Guaranteed to have another source here
+		var nextFactory;
+		
+		for(let i = 0; i < this.SOURCE_ALL; i++) {
+			nextFactory = ((sources >> i) & 1) << i;
+			if(0 != nextFactory && nextFactory > currFactory)
+				return nextFactory;
+		}
+		
+		throw "Failed to find next factory";
+	},
+	
+	/**
+	 * Returns the next numerically lower data source contained in the sources
+	 * bitmask. Returns SOURCE_NONE when there are no more sources.
+	 */
+	prevSourceType : function(currFactory, sources) {
+		if(this.SOURCE_NONE == currFactory)
+			currFactory = this.SOURCE_ALL + 1;
+		
+		do {
+			currFactory /= 2;
+			if(0 != (sources & currFactory))
+				return currFactory;
+		} while(currFactory > 1);
+		
+		return this.SOURCE_NONE;
+	},
+	
+	DAO_PLAYER : 1
+};
+
+},{}],8:[function(require,module,exports){
+const BaseDao = require('./BaseDao');
+
+module.exports = function() {
+	var dao = BaseDao();
+	
+	dao.data = {};
+	
+	dao.getData = function(id, callback) {
+		if(undefined != dao.data[id]) {
+			callback(dao.data[id]);
+			return;
+		}
+		
+		callback(null);
+	};
+	
+	dao.setData = function(id, data, callback) {
+		dao.data[id] = data;
+		
+		callback(true);
+	};
+	
+	dao.addData = function(id, data, callback) {
+		dao.getData(id, function(output) {
+			if(null != output)
+				callback(false);
+			else {
+				dao.setData(id, data, callback);
+			}
+		});
+	};
+	
+	dao.delData = function(id, callback) {
+		if(undefined == dao.data[id])
+			callback(false);
+		else {
+			delete dao.data[id];
+			
+			callback(true);
+		}
+	};
+	
+	return dao;
+};
+
+},{"./BaseDao":2}],9:[function(require,module,exports){
+const BaseDao = require('../BaseDao');
+
+module.exports = function() {
+	var dao = BaseDao();
+	
+	dao.getData = function(id, callback) {
+		SolGame.models.getPlayerData(function(playerData) {
+			callback(playerData.playerRecord);
+		});
+	};
+	
+	return dao;
+};
+
+},{"../BaseDao":2}],10:[function(require,module,exports){
+module.exports = function() {
+	var module = {};
+	
+	module.ITEM_TYPE_NOTHING     = 0;
+	module.ITEM_TYPE_BUCKET      = 1;
+	module.ITEM_TYPE_CREDITS     = 2;
+	module.ITEM_TYPE_SHIP        = 3;
+	module.ITEM_TYPE_COMMODITY   = 4;
+	module.ITEM_TYPE_SHIP_MODULE = 5;
+	module.ITEM_TYPE_R_CREDITS   = 6;
+	
+	module.createBucketFromDef = function(defBucket, defBucketItems) {
+		var bucket = module.createEmptyBucket();
+		
+		bucket.id = defBucket['bucket_id'];
+		bucket.name = defBucket['name'];
+		
+		defBucketItems.forEach(function(defBucketItem) {
+			if(defBucketItem['bucket_id'] != defBucket['bucket_id'])
+				console.log("Bucket item bucket id " + defBucketItem['bucket_id'] + " doesn't match def bucket id " + defBucket['bucket_id']);
+			else
+				bucket.modifyContents(defBucketItem['item_type'], defBucketItem['item_id'], defBucketItem['item_quantity']);
+		});
+		
+		return bucket;
+	};
+	
+	module.createBucketFromString = function(bucketItemsJson) {
+		var bucket = module.createEmptyBucket();
+		
+		var bucketItems = JSON.parse(bucketItemsJson);
+		
+		// This logic is duplicated in bucket.forEachItem, but I didn't want to
+		// hack a bucket together to be able to iterate over its items
+		Object.getOwnPropertyNames(bucketItems).forEach(function(itemType) {
+			Object.getOwnPropertyNames(bucketItems[itemType]).forEach(function(itemId) {
+				bucket.modifyContents(itemType, itemId, bucketItems[itemType][itemId]);
+			});
+		});
+		
+		return bucket;
+	};
+	
+	module.createBucketFromBucket = function(bucket) {
+		var copy = module.createEmptyBucket();
+		
+		copy.id = bucket.id;
+		copy.name = bucket.name;
+		copy.allowNegatives = bucket.allowNegatives;
+		
+		bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+			copy.modifyContents(itemType, itemId, itemQuantity);
+		});
+		
+		return copy;
+	};
+	
+	module.createEmptyBucket = function() {
+		var bucket = {};
+		
+		bucket.id = 0;
+		bucket.name = "Bucket";
+		bucket.allowNegatives = false;
+		bucket.items = {};
+		
+		/**
+		 * The primary way that a bucket's contents are modified. This will
+		 * potentially fail when adding negative quantities.
+		 *
+		 * @return bool If the bucket was modified or not.
+		 */
+		bucket.modifyContents = function(itemType, itemId, itemQuantity) {
+			itemType     = parseInt(itemType).toString();
+			itemId       = parseInt(itemId).toString();
+			itemQuantity = parseInt(itemQuantity);
+			
+			if(0 == itemQuantity)
+				return false;
+			
+			if(0 < itemQuantity || bucket.allowNegatives) {
+				if(!Object.getOwnPropertyNames(bucket.items).includes(itemType))
+					bucket.items[itemType] = {};
+				
+				if(!Object.getOwnPropertyNames(bucket.items[itemType]).includes(itemId))
+					bucket.items[itemType][itemId] = 0;
+			} else {
+				if(!Object.getOwnPropertyNames(bucket.items).includes(itemType))
+					return false;
+				
+				if(!Object.getOwnPropertyNames(bucket.items[itemType]).includes(itemId))
+					return false;
+			}
+			
+			if(0 > (bucket.items[itemType][itemId] + itemQuantity) && !bucket.allowNegatives)
+				return false;
+			
+			bucket.items[itemType][itemId] += itemQuantity;
+			
+			if(0 == bucket.items[itemType][itemId])
+				bucket.removeItem(itemType, itemId);
+			
+			return true;
+		};
+		
+		bucket.addBucketContents = function(otherBucket) {
+			otherBucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				bucket.modifyContents(itemType, itemId, itemQuantity);
+			});
+		};
+		
+		/**
+		 * Removes ALL of a given item from this bucket.
+		 *
+		 * @return bool If an item was removed.
+		 */
+		bucket.removeItem = function(itemType, itemId) {
+			var retVal = false;
+			
+			if(undefined != bucket.items[itemType]) {
+				if(undefined != bucket.items[itemType][itemId]) {
+					delete bucket.items[itemType][itemId];
+					retVal = true;
+				}
+				
+				if(0 == Object.getOwnPropertyNames(bucket.items[itemType]).length) {
+					delete bucket.items[itemType];
+					retVal = true;
+				}
+			}
+			
+			return retVal;
+		};
+		
+		bucket.getItemQuantity = function(itemType, itemId) {
+			if(undefined != bucket.items[itemType]) {
+				if(undefined != bucket.items[itemType][itemId]) {
+					return bucket.items[itemType][itemId];
+				}
+			}
+			
+			return 0;
+		};
+		
+		/**
+		 * Function to iterate of the contents of this bucket. Calls callback
+		 * with itemType, itemId, and itemQuantity parameters.
+		 */
+		bucket.forEachItem = function(callback) {
+			Object.getOwnPropertyNames(bucket.items).forEach(function(itemType) {
+				Object.getOwnPropertyNames(bucket.items[itemType]).forEach(function(itemId) {
+					callback(itemType, itemId, bucket.items[itemType][itemId]);
+				});
+			});
+		};
+		
+		bucket.setAllowNegatives = function(allow) {
+			if(allow) {
+				bucket.allowNegatives = true;
+			} else {
+				// Need to clean out negative values, create a copy so we can iterate over the items cleanly
+				var copy = module.createBucketFromBucket(bucket);
+				
+				copy.forEachItem(function(itemType, itemId, itemQuantity) {
+					if(0 >= itemQuantity)
+						bucket.removeItem(itemType, itemId);
+				});
+				
+				bucket.allowNegatives = false;
+			}
+		};
+		
+		/**
+		 * Sums the quantities of all items or just the items that have a type
+		 * which is contained in the itemTypeArr parameter.
+		 */
+		bucket.itemQuantitySum = function(itemTypeArr = null) {
+			var sum = 0;
+			
+			bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				if(null == itemTypeArr || itemTypeArr.includes(itemType))
+					sum += itemQuantity;
+			});
+			
+			return sum;
+		};
+		
+		bucket.numUniqueItems = function() {
+			var sum = 0;
+			
+			bucket.forEachItem(function(itemType, itemId, itemQuantity) {
+				sum++;
+			});
+			
+			return sum;
+		};
+		
+		/**
+		 * Function to generate the JSON object associated with this bucket's
+		 * contents. Does not encapsulate the other properties of the bucket.
+		 * The output of this function should be what is passed into the
+		 * createBucketFromString constructor.
+		 */
+		bucket.getItemsString = function() {
+			return JSON.stringify(bucket.items);
+		};
+		
+		return bucket;
+	};
+	
+	return module;
+};
+
+},{}],11:[function(require,module,exports){
 var OrbitalMechanics = require('./OrbitalMechanics');
 var Bezier = require('bezier-js');
 var Victor = require('victor');
@@ -449,7 +1092,7 @@ module.exports = function() {
 
 
 
-},{"./OrbitalMechanics":2,"bezier-js":4,"victor":8}],2:[function(require,module,exports){
+},{"./OrbitalMechanics":12,"bezier-js":14,"victor":18}],12:[function(require,module,exports){
 var Victor = require('victor');
 
 module.exports = function() {
@@ -698,7 +1341,7 @@ module.exports = function() {
 	return module;
 };
 
-},{"victor":8}],3:[function(require,module,exports){
+},{"victor":18}],13:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	
@@ -822,10 +1465,10 @@ module.exports = function() {
 	return module;
 };
 
-},{}],4:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 module.exports = require('./lib/bezier');
 
-},{"./lib/bezier":5}],5:[function(require,module,exports){
+},{"./lib/bezier":15}],15:[function(require,module,exports){
 /**
   A javascript Bezier curve library by Pomax.
 
@@ -1675,7 +2318,7 @@ module.exports = require('./lib/bezier');
 
 }());
 
-},{"./poly-bezier.js":6,"./utils.js":7}],6:[function(require,module,exports){
+},{"./poly-bezier.js":16,"./utils.js":17}],16:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -1733,7 +2376,7 @@ module.exports = require('./lib/bezier');
   module.exports = PolyBezier;
 }());
 
-},{"./utils.js":7}],7:[function(require,module,exports){
+},{"./utils.js":17}],17:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -2283,7 +2926,7 @@ module.exports = require('./lib/bezier');
   module.exports = utils;
 }());
 
-},{"./bezier":5}],8:[function(require,module,exports){
+},{"./bezier":15}],18:[function(require,module,exports){
 exports = module.exports = Victor;
 
 /**
@@ -3609,19 +4252,23 @@ function degrees2radian (deg) {
 	return deg / degrees;
 }
 
-},{}],9:[function(require,module,exports){
-var victor = require('victor');
+},{}],19:[function(require,module,exports){
+const victor = require('victor');
 
-var om = require('../../helpers/OrbitalMechanics');
-var nm = require('../../helpers/NavigationMechanics');
-var qm = require('../../helpers/QuestMechanics');
+const bm = require('../../helpers/BucketMechanics');
+const om = require('../../helpers/OrbitalMechanics');
+const nm = require('../../helpers/NavigationMechanics');
+const qm = require('../../helpers/QuestMechanics');
+const db = require('../../data/DataBox');
 
 SolGame.Shared = {
 	Victor : victor,
 	
+	BucketMechanics : bm,
 	OrbitalMechanics : om,
 	NavigationMechanics : nm,
-	QuestMechanics : qm
+	QuestMechanics : qm,
+	DataBox : db
 };
 
-},{"../../helpers/NavigationMechanics":1,"../../helpers/OrbitalMechanics":2,"../../helpers/QuestMechanics":3,"victor":8}]},{},[9]);
+},{"../../data/DataBox":6,"../../helpers/BucketMechanics":10,"../../helpers/NavigationMechanics":11,"../../helpers/OrbitalMechanics":12,"../../helpers/QuestMechanics":13,"victor":18}]},{},[19]);

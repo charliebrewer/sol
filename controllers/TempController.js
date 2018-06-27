@@ -19,11 +19,28 @@ var DataBox = require('../helpers/DataBox');
 var BucketMechanics = require('../helpers/BucketMechanics');
 var pda = require('../models/PersistentDataAccess');
 
+var newDataBox = require('../data/DataBox');
+
 module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
+		var db = newDataBox().getDataBoxServerStandard();
+		//var db = newDataBox().getDataBoxServerNoWrite();
 		
+		db.getData(1, 100000, function(out1) {
+			output.data.first = Object.assign({}, out1);
+			out1.credits += 10;
+			
+			db.setData(1, 100000, out1, function() {
+				db.getData(1, 100000, function(out2) {
+					output.data.second = out2;
+					callback(output);
+				});
+			});
+		});
+		
+		return;
 		var intput = {plrQuestId : 5, completionPct1000 : 1000};
 		QuestController().completeQuest(dataBox, intput, output, callback);
 		return;

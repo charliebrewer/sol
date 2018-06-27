@@ -1,13 +1,17 @@
-var victor = require('victor');
+const victor = require('victor');
 
-var om = require('../../helpers/OrbitalMechanics');
-var nm = require('../../helpers/NavigationMechanics');
-var qm = require('../../helpers/QuestMechanics');
+const bm = require('../../helpers/BucketMechanics');
+const om = require('../../helpers/OrbitalMechanics');
+const nm = require('../../helpers/NavigationMechanics');
+const qm = require('../../helpers/QuestMechanics');
+const db = require('../../data/DataBox');
 
 SolGame.Shared = {
 	Victor : victor,
 	
+	BucketMechanics : bm,
 	OrbitalMechanics : om,
 	NavigationMechanics : nm,
-	QuestMechanics : qm
+	QuestMechanics : qm,
+	DataBox : db
 };

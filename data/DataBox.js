@@ -202,7 +202,7 @@ module.exports = function() {
 			},
 			
 			delData : function(daoType, id, callback) {
-				_delData(DataSources.SOURCE_NONE, daoType, id, data, callback);
+				_delData(DataSources.SOURCE_NONE, daoType, id, callback);
 			},
 			
 			clearCache : function(daoType, id, callback) {

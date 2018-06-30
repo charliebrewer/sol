@@ -3,11 +3,11 @@ const BaseDao = require('./BaseDao');
 module.exports = function() {
 	var dao = BaseDao();
 	
-	dao.data = {};
+	var _data = {};
 	
 	dao.getData = function(id, callback) {
-		if(undefined != dao.data[id]) {
-			callback(dao.data[id]);
+		if(undefined != _data[id]) {
+			callback(_data[id]);
 			return;
 		}
 		
@@ -15,7 +15,7 @@ module.exports = function() {
 	};
 	
 	dao.setData = function(id, data, callback) {
-		dao.data[id] = data;
+		_data[id] = data;
 		
 		callback(true);
 	};
@@ -31,10 +31,10 @@ module.exports = function() {
 	};
 	
 	dao.delData = function(id, callback) {
-		if(undefined == dao.data[id])
+		if(undefined == _data[id])
 			callback(false);
 		else {
-			delete dao.data[id];
+			delete _data[id];
 			
 			callback(true);
 		}

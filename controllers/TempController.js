@@ -20,12 +20,32 @@ var BucketMechanics = require('../helpers/BucketMechanics');
 var pda = require('../models/PersistentDataAccess');
 
 var newDataBox = require('../data/DataBox');
+var MapData = require('../helpers/MapData');
 
 module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
 		var db = newDataBox().getDataBoxServerStandard();
+		
+		MapData.buildSystemMap(db, function(systemMap) {
+			systemMap.forEachMapObj(false, function(mapObj) {
+				console.log(mapObj.id);
+				console.log(mapObj.pos);
+			});
+			
+			for(let i = 0; i < 1000; i++)
+				systemMap.updateAllPos(Date.now());
+			
+			systemMap.forEachMapObj(false, function(mapObj) {
+				console.log(mapObj.id);
+				console.log(mapObj.pos);
+			});
+		});
+		
+		callback(output);
+		
+		return;
 		//var db = newDataBox().getDataBoxServerNoWrite();
 		
 		db.getData(1, 100000, function(out1) {

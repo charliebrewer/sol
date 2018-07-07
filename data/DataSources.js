@@ -43,5 +43,6 @@ module.exports = {
 		return this.SOURCE_NONE;
 	},
 	
-	DAO_PLAYER : 1
+	DAO_PLAYER: 1,
+	DAO_CEL_BODIES: 2
 };

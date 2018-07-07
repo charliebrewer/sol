@@ -3,7 +3,7 @@ var Victor = require('victor');
 module.exports = function() {
 	var module = {};
 	
-	module.SOL_ID                 = 1; // Special case for the ID of the sun in the db
+	module.SOL_ID                 = 1; // Special case for the ID of the sun in the db TODO remove moved to MapData
 	module.EARTH_SECONDS_IN_YEAR  = 31540000;
 	module.SECONDS_IN_HOUR        = 3600;
 	module.CENTER_OF_SYSTEM       = 0; // Previously was 2^32 / 2, but we're using signed integers for position now
@@ -14,6 +14,7 @@ module.exports = function() {
 	module.TIME_UNIT              = module.EARTH_YEAR_PERIOD / 60; // The unit of time used for speed calculations, route checks, etc
 	
 	/**
+	 * TODO remove moved to MapData
 	 * Data structure for a location in space and time.
 	 */
 	module.getCrd = function(posX, posY, movX, movY, timestamp) {

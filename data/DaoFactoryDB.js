@@ -1,5 +1,8 @@
 const DataSources = require('./DataSources');
 
+const BaseDao = require('./BaseDao');
+
+const DefCelBodiesDaoDB = require('./DBDaos/DefCelBodiesDaoDB');
 const PlayerDaoDB = require('./DBDaos/PlayerDaoDB');
 
 module.exports = function() {
@@ -11,6 +14,14 @@ module.exports = function() {
 		switch(daoType) {
 			case DataSources.DAO_PLAYER:
 				return PlayerDaoDB();
+			break;
+			
+			case DataSources.DAO_CEL_BODIES:
+				return DefCelBodiesDaoDB();
+			break;
+			
+			default:
+				return BaseDao();
 			break;
 		}
 	};

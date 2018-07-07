@@ -122,17 +122,18 @@ plr_warrants
 ---- Definitions Data
 ----------------------------------------------------------------
 
-CREATE TABLE def_celestial_bodies (
-	celestial_body_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-	name VARCHAR(30) NOT NULL,
-	mass INT UNSIGNED NOT NULL DEFAULT 0, -- Number of Earth masses times 1000
-	radius INT UNSIGNED NOT NULL, -- Radius of body in meters
-	img_url VARCHAR(100) NOT NULL,
-	parent_body_id SMALLINT UNSIGNED NOT NULL DEFAULT 0, -- 0 means the sun
-	distance_from_parent INT UNSIGNED NOT NULL,
-	flags SMALLINT NOT NULL DEFAULT 0,
-	CONSTRAINT FK_CelestialParentBody FOREIGN KEY (parent_body_id) REFERENCES def_celestial_bodies(celestial_body_id)
-);
+CREATE TABLE `def_celestial_bodies` (
+  `celestial_body_id` smallint(5) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(30) NOT NULL,
+  `mass` int(10) unsigned NOT NULL DEFAULT '0',
+  `radius` int(10) unsigned NOT NULL,
+  `img_url` varchar(100) NOT NULL,
+  `parent_body_id` smallint(5) unsigned NOT NULL DEFAULT '0',
+  `distance_from_parent` int(10) unsigned NOT NULL,
+  `flags` smallint(6) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`celestial_body_id`),
+  KEY `FK_CelestialParentBody` (`parent_body_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8
 
 CREATE TABLE def_stations (
 	station_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

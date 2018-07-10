@@ -133,7 +133,7 @@ CREATE TABLE `def_celestial_bodies` (
   `flags` smallint(6) NOT NULL DEFAULT '0',
   PRIMARY KEY (`celestial_body_id`),
   KEY `FK_CelestialParentBody` (`parent_body_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
 
 CREATE TABLE def_stations (
 	station_id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -257,3 +257,17 @@ cfg_laws
 - sentence_max
 - statute_of_limitations
 - flags
+
+----------------------------------------------------------------
+---- Other Data
+----------------------------------------------------------------
+
+-- incomplete
+CREATE TABLE `map_obj_data` (
+	`map_obj_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`img_url` varchar(100) NOT NULL,
+	`time_end` int(10) unsigned NOT NULL DEFAULT '0',
+	`path_data` varchar(4096) NOT NULL,
+	`flags` smallint(5) unsigned NOT NULL DEFAULT '0',
+	PRIMARY KEY (`map_obj_id`),
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

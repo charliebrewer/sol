@@ -29,7 +29,7 @@ module.exports = function() {
 		var db = newDataBox().getDataBoxServerStandard();
 		
 		MapData.buildSystemMap(db, function(systemMap) {
-			systemMap.forEachMapObj(false, function(mapObj) {
+			systemMap.forActiveMapObj(function(mapObj) {
 				console.log(mapObj.id);
 				console.log(mapObj.pos);
 			});
@@ -37,7 +37,7 @@ module.exports = function() {
 			for(let i = 0; i < 1000; i++)
 				systemMap.updateAllPos(Date.now());
 			
-			systemMap.forEachMapObj(false, function(mapObj) {
+			systemMap.forActiveMapObj(function(mapObj) {
 				console.log(mapObj.id);
 				console.log(mapObj.pos);
 			});

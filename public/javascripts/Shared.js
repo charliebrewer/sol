@@ -14,6 +14,6 @@ SolGame.Shared = {
 	OrbitalMechanics : om,
 	NavigationMechanics : nm,
 	QuestMechanics : qm,
-	DataBox : db
+	DataBox : db,
 	MapData : md
 };

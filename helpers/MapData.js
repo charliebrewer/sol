@@ -25,8 +25,7 @@ module.exports = {
 		this.imgUrl    = '';
 		this.active    = true;
 		this.pos       = {x: 0, y: 0};
-		this.mass      = 0;
-		this.pathData  = {type: module.exports.PATH_NONE};
+		this.path      = {type: module.exports.PATH_NONE, data: {}};
 		
 		this.updatePos = function(timeMs) {};
 	},
@@ -34,23 +33,29 @@ module.exports = {
 	SystemMap : function() {
 		var _mapObjs = [];
 		
-		this.forEachMapObj = function(forceAll, callback) {
+		this.forActiveMapObj = function(callback) {
 			_mapObjs.forEach(function(e) {
-				if(forceAll || e.active)
+				if(e.active)
 					callback(e);
 			});
 		};
 		
+		this.forAllMapObj = function(callback) {
+			_mapObjs.forEach(function(e) {
+				callback(e);
+			});
+		};
+		
 		this.addMapObj = function(mapObj) {
-			if(module.exports.PATH_ORBIT == mapObj.pathData.type) {
-				mapObj.pathData.parentPos = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.pathData.parentId).pos;
-				
-				if(undefined == mapObj.pathData.parentPos)
-					throw "Could not find parent. ID: " + mapObj.pathData.parentId;
-			}
-			
 			if(undefined != _mapObjs.find(e => e.type == mapObj.type && e.id == mapObj.id))
 				throw "Adding map obj that already exists. type " + mapObj.type + " id: " + mapObj.id;
+			
+			if(module.exports.PATH_ORBIT == mapObj.path.type) {
+				mapObj.path.data.parentMapObj = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId);
+				
+				if(undefined == mapObj.path.data.parentMapObj)
+					throw "Could not find parent. ID: " + mapObj.path.data.parentId;
+			}
 			
 			_mapObjs.push(mapObj);
 		},
@@ -68,12 +73,19 @@ module.exports = {
 		};
 		
 		this.updateAllPos = function(timeMs) {
-			this.forEachMapObj(false, function(mapObj) {
+			this.forActiveMapObj(function(mapObj) {
 				mapObj.updatePos(timeMs);
 			});
 		};
 	},
 	
+	/**
+	 * Function to build a system map object with celestial bodies and stations
+	 * included. Also fetches anomaly data for the player as well as their own
+	 * route if it exists.
+	 *
+	 * @return SystemMap
+	 */
 	buildSystemMap: function(dataBox, callback) {
 		var systemMap = new this.SystemMap();
 		
@@ -85,7 +97,7 @@ module.exports = {
 			
 			mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defSol.celestial_body_id);
 			mapObj.imgUrl = defSol.img_url;
-			mapObj.pathData.type = module.exports.PATH_POINT; // Sun doesn't move
+			mapObj.path.type = module.exports.PATH_POINT; // Sun doesn't move
 			
 			systemMap.addMapObj(mapObj);
 			
@@ -99,11 +111,11 @@ module.exports = {
 					mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defCelBody.celestial_body_id);
 					mapObj.imgUrl = defCelBody.img_url;
 					
-					mapObj.pathData.type = module.exports.PATH_ORBIT;
-					mapObj.pathData.distanceFromParent = defCelBody.distance_from_parent;
-					mapObj.pathData.orbitalPeriodHours = 1;
-					mapObj.pathData.thetaOffsetDeg = 0;
-					mapObj.pathData.parentId = defCelBody.parent_body_id;
+					mapObj.path.type = module.exports.PATH_ORBIT;
+					mapObj.path.data.distanceFromParent = defCelBody.distance_from_parent;
+					mapObj.path.data.orbitalPeriodHours = 5000 + Math.random() * 5000; // TODO populate this correctly
+					mapObj.path.data.thetaOffsetDeg = 0;
+					mapObj.path.data.parentId = defCelBody.parent_body_id;
 					
 					mapObj.updatePos = module.exports.updatePosOrbit;
 					
@@ -113,27 +125,15 @@ module.exports = {
 			
 			callback(systemMap);
 		});
-			
-	},
-	
-	getOrbitDataStructure: function() {
-		return {
-			type: module.exports.PATH_ORBIT,
-			parentId: 0,
-			distanceFromParent: 1,
-			orbitalPeriodHours: 1,
-			thetaOffsetDeg: 0,
-			parentPos: {x: 0, y: 0}
-		};
 	},
 	
 	updatePosOrbit: function(timeMs) {
 		this.pos = OrbitalMechanics().getOrbitalPosition(
-			this.pathData.parentPos,
-			this.pathData.distanceFromParent,
-			this.pathData.orbitalPeriodHours,
+			this.path.data.parentMapObj.pos,
+			this.path.data.distanceFromParent,
+			this.path.data.orbitalPeriodHours,
 			timeMs,
-			this.pathData.thetaOffsetDeg
+			this.path.data.thetaOffsetDeg
 		);
 	},
 };

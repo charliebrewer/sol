@@ -9,13 +9,22 @@ SolGame.app = {
 		SolGame.DefinitionsData.updateDefinitionsData(function() {
 			// Load player data
 			SolGame.PlayerData.updatePlayerData(function() {
-				callback();
+				var db = SolGame.Shared.DataBox().getDataBoxClientStandard();
+				
+				SolGame.Shared.MapData.buildSystemMap(db, function(systemMap) {
+					SolGame.MapViewer.systemMap = systemMap;
+					SolGame.MapViewer.setTarget(SolGame.Shared.MapData.MAPOBJ_CELBODY, SolGame.Shared.MapData.SOL_ID);
+					
+					SolGame.MapViewer.loadResources(function() {
+						SolGame.views.pixiApp.ticker.add(SolGame.MapViewer.draw);
+					});
+				});
 			});
 		});
 	},
 	
 	start : function(callback) {
 		// Load navigation screen and connect ticker to renderer
-		SolGame.views.renderNavigationView();
+		//SolGame.views.renderNavigationView();
 	}
 };

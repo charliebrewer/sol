@@ -8,6 +8,7 @@ SolGame.views = {
 		SolGame.views.pixiApp = new PIXI.Application({width: 900, height: 510});
 		$('#solRender').append(SolGame.views.pixiApp.view);
 		
+		/*
 		SolGame.views.drift = new PIXI.Graphics();
 		SolGame.views.drift.lineStyle(1, 0xFFFFFF);
 		SolGame.views.pixiApp.stage.addChild(SolGame.views.drift);
@@ -19,6 +20,7 @@ SolGame.views = {
 		SolGame.views.controlPoint2 = new PIXI.Graphics();
 		SolGame.views.controlPoint2.lineStyle(1, 0xFFFFFF);
 		SolGame.views.pixiApp.stage.addChild(SolGame.views.controlPoint2);
+		*/
 	},
 	
 	/**

@@ -31,12 +31,13 @@ SolGame.MapViewer = SolGame.MapViewer || {
 	},
 	
 	loadResources: function(callback) {
-		SolGame.MapViewer.systemMap.forActiveMapObj(function(mapObj) {
-			SolGame.views.pixiApp.loader.add(mapObj.imgUrl, mapObj.imgUrl);
+		SolGame.MapViewer.systemMap.forAllMapObj(function(mapObj) {
+			if(!SolGame.views.pixiApp.loader.resources[mapObj.imgUrl])
+				SolGame.views.pixiApp.loader.add(mapObj.imgUrl, mapObj.imgUrl);
 		});
 		
 		SolGame.views.pixiApp.loader.load((loader, pResources) => {
-			SolGame.MapViewer.systemMap.forActiveMapObj(function(mapObj) {
+			SolGame.MapViewer.systemMap.forAllMapObj(function(mapObj) {
 				var sprite = new PIXI.Sprite(pResources[mapObj.imgUrl].texture);
 				
 				sprite.scale.x = 0.1;
@@ -44,6 +45,11 @@ SolGame.MapViewer = SolGame.MapViewer || {
 				
 				sprite.anchor.x = 0.5;
 				sprite.anchor.y = 0.5;
+				
+				sprite.interactive = true;
+				sprite.on("click", function() {
+					SolGame.MapViewer.setTarget(mapObj.type, mapObj.id);
+				});
 				
 				SolGame.views.pixiApp.stage.addChild(sprite);
 				

@@ -778,7 +778,7 @@ module.exports = {
 					
 					mapObj.path.type = module.exports.PATH_ORBIT;
 					mapObj.path.data.distanceFromParent = defCelBody.distance_from_parent;
-					mapObj.path.data.orbitalPeriodHours = 5000 + Math.random() * 5000; // TODO populate this correctly
+					mapObj.path.data.orbitalPeriodHours = 1000 + Math.random() * 8000; // TODO populate this correctly
 					mapObj.path.data.thetaOffsetDeg = 0;
 					mapObj.path.data.parentId = defCelBody.parent_body_id;
 					

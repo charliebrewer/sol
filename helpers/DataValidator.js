@@ -77,7 +77,7 @@ module.exports = {
 			break;
 			
 			case module.exports.DATA_INT:
-				retData = parseInt(data);
+				retData = parseInt(data, 10);
 				
 				if(isNaN(retData))
 					throw "Expected int, got NaN";
@@ -88,6 +88,8 @@ module.exports = {
 				
 				if(isNaN(retData))
 					throw "Expected float, got NaN";
+				if(!isFinite(retData))
+					throw "Received infinite value";
 			break;
 			
 			case module.exports.DATA_STR:

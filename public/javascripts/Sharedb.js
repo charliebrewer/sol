@@ -663,36 +663,136 @@ module.exports = function() {
 };
 
 },{}],12:[function(require,module,exports){
+module.exports = {
+	DATA_ANY:   0,
+	DATA_BOOL:  1,
+	DATA_INT:   2,
+	DATA_FLOAT: 3,
+	DATA_STR:   4,
+	DATA_ARR:   5,
+	DATA_OBJ:   6,
+	
+	/**
+	 * Function to compare an object against a template. Builds a new object
+	 * based on the template and returns it.
+	 *
+	 * @param obj The object to be validated.
+	 * @param template Template object to compare against. Keys in the template
+	 *     correspond to named keys expected in the object, and the values of each
+	 *     key map to an object with the following keys.
+	 *       type: ObjectValidator.DATA_INT - Required
+	 *       template: {} - Another valid template, used for object types and arrays containing objects
+	 *       arrType: ObjectValidator.DATA_INT - The type of elements in an array
+	 */
+	cleanObj: function(obj, template) {
+		if('object' != typeof obj || Array.isArray(obj))
+			throw "Not validating object";
+		
+		var retObj = {};
+		
+		Object.keys(template).forEach(function(key) {
+			if(undefined == obj[key])
+				throw "Object doesn't have key: " + key;
+			
+			if(module.exports.DATA_ANY == template[key].type) {
+				retObj[key] = obj[key];
+			} else if(module.exports.DATA_OBJ == template[key].type) {
+				if('object' != typeof obj[key])
+					throw "Key was not object: " + key;
+				
+				retObj[key] = module.exports.cleanObj(obj[key], template[key].template);
+			} else if(module.exports.DATA_ARR == template[key].type) {
+				if(!Array.isArray(obj[key]))
+					throw "Key was not array: " + key;
+				
+				if(module.exports.DATA_ARR == template[key].arrType)
+					throw "Arrays within arrays not supported";
+					
+				retObj[key] = [];
+				
+				obj[key].forEach(function(val) {
+					if(module.exports.DATA_OBJ == template[key].arrType)
+						retObj[key].push(module.exports.cleanObj(val, template[key].template));
+					else
+						retObj[key].push(module.exports.cleanData(val, template[key].arrType));
+				});
+			} else {
+				// Assumed primitive data type
+				retObj[key] = module.exports.cleanData(obj[key], template[key].type);
+			}
+		});
+		
+		return retObj;
+	},
+	
+	/**
+	 * Function to clean primitive data. Not used for arrays and objects.
+	 *
+	 * @param data The data to be cleaned
+	 * @param type The type of data expected, DATA_*
+	 *
+	 * @return Primitive data type
+	 */
+	cleanData: function(data, type) {
+		var retData;
+		
+		switch(type) {
+			case module.exports.DATA_BOOL:
+				retData = !!data;
+			break;
+			
+			case module.exports.DATA_INT:
+				retData = parseInt(data, 10);
+				
+				if(isNaN(retData))
+					throw "Expected int, got NaN";
+			break;
+			
+			case module.exports.DATA_FLOAT:
+				retData = parseFloat(data);
+				
+				if(isNaN(retData))
+					throw "Expected float, got NaN";
+				if(!isFinite(retData))
+					throw "Received infinite value";
+			break;
+			
+			case module.exports.DATA_STR:
+				retData = data + '';
+			break;
+			
+			default:
+				throw "Unhandled primitive data type: " + type;
+			break;
+		}
+		
+		return retData;
+	},
+};
+
+},{}],13:[function(require,module,exports){
 const DataSources = require('../data/DataSources');
-const OrbitalMechanics = require('./OrbitalMechanics');
+const PathData = require('./PathData');
 
 module.exports = {
 	SOL_ID: 1, // ID of the sun in the db
 	
-	MAPOBJ_CELBODY: 'celbody',
-	MAPOBJ_STATION: 'station',
-	MAPOBJ_ANOMALY: 'anomaly',
+	MAPOBJ_CELBODY: 1,
+	MAPOBJ_STATION: 2,
+	MAPOBJ_ANOMALY: 3,
 	
-	ANOM_UNKNOWN:       'unknown',
-	ANOM_SHIP:          'ship',
-	ANOM_COMMUNICATION: 'communication', // Distress calls, regular comms
-	ANOM_EXPLOSION:     'explosion', // Weapons fire, ship destruction
-	ANOM_CARGO:         'cargo', // Items
-	
-	PATH_NONE:  'none',
-	PATH_POINT: 'point',
-	PATH_ORBIT: 'orbit',
-	PATH_CURVE: 'curve',
+	ANOM_UNKNOWN:       0,
+	ANOM_SHIP:          1,
+	ANOM_COMMUNICATION: 2, // Distress calls, regular comms
+	ANOM_EXPLOSION:     3, // Weapons fire, ship destruction
+	ANOM_CARGO:         4, // Items
 	
 	MapObj: function(type, id) {
 		this.type      = type;
 		this.id        = id;
 		this.imgUrl    = '';
 		this.active    = true;
-		this.pos       = {x: 0, y: 0};
-		this.path      = {type: module.exports.PATH_NONE, data: {}};
-		
-		this.updatePos = function(timeMs) {};
+		this.path      = new PathData.PathObj();
 	},
 	
 	SystemMap : function() {
@@ -715,7 +815,7 @@ module.exports = {
 			if(undefined != _mapObjs.find(e => e.type == mapObj.type && e.id == mapObj.id))
 				throw "Adding map obj that already exists. type " + mapObj.type + " id: " + mapObj.id;
 			
-			if(module.exports.PATH_ORBIT == mapObj.path.type) {
+			if(PathData.PATH_ORBIT == mapObj.path.type) {
 				mapObj.path.data.parentMapObj = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId);
 				
 				if(undefined == mapObj.path.data.parentMapObj)
@@ -739,7 +839,7 @@ module.exports = {
 		
 		this.updateAllPos = function(timeMs) {
 			this.forActiveMapObj(function(mapObj) {
-				mapObj.updatePos(timeMs);
+				mapObj.path.updatePos(timeMs);
 			});
 		};
 	},
@@ -762,7 +862,8 @@ module.exports = {
 			
 			mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defSol.celestial_body_id);
 			mapObj.imgUrl = defSol.img_url;
-			mapObj.path.type = module.exports.PATH_POINT; // Sun doesn't move
+			mapObj.path = new PathData.PathObj();
+			mapObj.path.type = PathData.PATH_POINT; // Sun doesn't move
 			
 			systemMap.addMapObj(mapObj);
 			
@@ -776,13 +877,12 @@ module.exports = {
 					mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defCelBody.celestial_body_id);
 					mapObj.imgUrl = defCelBody.img_url;
 					
-					mapObj.path.type = module.exports.PATH_ORBIT;
-					mapObj.path.data.distanceFromParent = defCelBody.distance_from_parent;
-					mapObj.path.data.orbitalPeriodHours = defCelBody.distance_from_parent * 50; // TODO populate this correctly
-					mapObj.path.data.thetaOffsetDeg = 0;
-					mapObj.path.data.parentId = defCelBody.parent_body_id;
-					
-					mapObj.updatePos = module.exports.updatePosOrbit;
+					mapObj.path = new PathData.getPath(PathData.PATH_ORBIT, {
+						distanceFromParent: defCelBody.distance_from_parent,
+						orbitalPeriodHours: defCelBody.distance_from_parent * 50,
+						thetaOffsetDeg: 0,
+						parentId: defCelBody.parent_body_id
+					});
 					
 					systemMap.addMapObj(mapObj);
 				});
@@ -790,20 +890,10 @@ module.exports = {
 			
 			callback(systemMap);
 		});
-	},
-	
-	updatePosOrbit: function(timeMs) {
-		this.pos = OrbitalMechanics().getOrbitalPosition(
-			this.path.data.parentMapObj.pos,
-			this.path.data.distanceFromParent,
-			this.path.data.orbitalPeriodHours,
-			timeMs,
-			this.path.data.thetaOffsetDeg
-		);
-	},
+	}
 };
 
-},{"../data/DataSources":7,"./OrbitalMechanics":14}],13:[function(require,module,exports){
+},{"../data/DataSources":7,"./PathData":16}],14:[function(require,module,exports){
 var OrbitalMechanics = require('./OrbitalMechanics');
 var Bezier = require('bezier-js');
 var Victor = require('victor');
@@ -1254,7 +1344,7 @@ module.exports = function() {
 
 
 
-},{"./OrbitalMechanics":14,"bezier-js":16,"victor":20}],14:[function(require,module,exports){
+},{"./OrbitalMechanics":15,"bezier-js":18,"victor":22}],15:[function(require,module,exports){
 var Victor = require('victor');
 
 module.exports = function() {
@@ -1504,7 +1594,87 @@ module.exports = function() {
 	return module;
 };
 
-},{"victor":20}],15:[function(require,module,exports){
+},{"victor":22}],16:[function(require,module,exports){
+const DataValidator = require('./DataValidator');
+const OrbitalMechanics = require('./OrbitalMechanics');
+
+module.exports = {
+	PATH_NONE:  0,
+	PATH_POINT: 1,
+	PATH_ORBIT: 2,
+	PATH_CURVE: 3,
+	
+	PathObj: function() {
+		this.type = module.exports.PATH_NONE;
+		this.pos = {x: 0, y: 0};
+		this.data = {};
+		
+		this.updatePos = function(timeMs) {};
+	},
+	
+	getPathFromJson: function(pathJson) {
+		var tempPath = JSON.parse(pathJson);
+		return module.exports.getPath(tempPath.type, tempPath);
+	},
+	
+	getPath: function(pathType, pathData) {
+		var pathObj = new module.exports.PathObj();
+		
+		switch(DataValidator.cleanData(pathType, DataValidator.DATA_INT)) {
+			case module.exports.PATH_NONE:
+				pathObj.type = module.exports.PATH_NONE;
+				pathObj.updatePos = module.exports.updatePosNone;
+			break;
+			
+			case module.exports.PATH_POINT:
+				pathObj.type = module.exports.PATH_POINT;
+				pathObj.updatePos = module.exports.updatePosPoint;
+			break;
+			
+			case module.exports.PATH_ORBIT:
+				pathObj.type = module.exports.PATH_ORBIT;
+				pathObj.updatePos = module.exports.updatePosOrbit;
+				
+				pathObj.data = DataValidator.cleanObj(pathData, {
+					distanceFromParent: {type: DataValidator.DATA_INT},
+					orbitalPeriodHours: {type: DataValidator.DATA_INT},
+					thetaOffsetDeg: {type: DataValidator.DATA_FLOAT},
+					parentId: {type: DataValidator.DATA_INT}
+				});
+				
+				pathObj.data.parentPos = {x: 0, y: 0};
+			break;
+			
+			case module.exports.PATH_CURVE:
+				pathObj.type = module.exports.PATH_CURVE;
+				pathObj.updatePos = module.exports.updatePosCurve;
+			break;
+			
+			default:
+				throw "Unrecognized path type: "+ pathType;
+			break;
+		}
+		
+		return pathObj;
+	},
+	
+	updatePosNone: function(timeMs) {},
+	updatePosPoint: function(timeMs) {},
+	
+	updatePosOrbit: function(timeMs) {
+		this.pos = OrbitalMechanics().getOrbitalPosition(
+			this.data.parentMapObj.path.pos,
+			this.data.distanceFromParent,
+			this.data.orbitalPeriodHours,
+			timeMs,
+			this.data.thetaOffsetDeg
+		);
+	},
+	
+	updatePosCurve: function(timeMs) {},
+};
+
+},{"./DataValidator":12,"./OrbitalMechanics":15}],17:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	
@@ -1628,10 +1798,10 @@ module.exports = function() {
 	return module;
 };
 
-},{}],16:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 module.exports = require('./lib/bezier');
 
-},{"./lib/bezier":17}],17:[function(require,module,exports){
+},{"./lib/bezier":19}],19:[function(require,module,exports){
 /**
   A javascript Bezier curve library by Pomax.
 
@@ -2481,7 +2651,7 @@ module.exports = require('./lib/bezier');
 
 }());
 
-},{"./poly-bezier.js":18,"./utils.js":19}],18:[function(require,module,exports){
+},{"./poly-bezier.js":20,"./utils.js":21}],20:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -2539,7 +2709,7 @@ module.exports = require('./lib/bezier');
   module.exports = PolyBezier;
 }());
 
-},{"./utils.js":19}],19:[function(require,module,exports){
+},{"./utils.js":21}],21:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -3089,7 +3259,7 @@ module.exports = require('./lib/bezier');
   module.exports = utils;
 }());
 
-},{"./bezier":17}],20:[function(require,module,exports){
+},{"./bezier":19}],22:[function(require,module,exports){
 exports = module.exports = Victor;
 
 /**
@@ -4415,7 +4585,7 @@ function degrees2radian (deg) {
 	return deg / degrees;
 }
 
-},{}],21:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 const victor = require('victor');
 
 const bm = require('../../helpers/BucketMechanics');
@@ -4436,4 +4606,4 @@ SolGame.Shared = {
 	MapData : md
 };
 
-},{"../../data/DataBox":6,"../../helpers/BucketMechanics":11,"../../helpers/MapData":12,"../../helpers/NavigationMechanics":13,"../../helpers/OrbitalMechanics":14,"../../helpers/QuestMechanics":15,"victor":20}]},{},[21]);
+},{"../../data/DataBox":6,"../../helpers/BucketMechanics":11,"../../helpers/MapData":13,"../../helpers/NavigationMechanics":14,"../../helpers/OrbitalMechanics":15,"../../helpers/QuestMechanics":17,"victor":22}]},{},[23]);

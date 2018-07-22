@@ -9,14 +9,14 @@ SolGame.MapViewer = SolGame.MapViewer || {
 	
 	getRenderedPosition: function(pos, isX) {
 		if(isX)
-			return (((pos - SolGame.MapViewer.focusMapObj.pos.x + SolGame.MapViewer.viewOffset.x) + (SolGame.views.systemSizeX / 2)) / SolGame.views.systemSizeX) * SolGame.views.pixiApp.renderer.width;
+			return (((pos - SolGame.MapViewer.focusMapObj.path.pos.x + SolGame.MapViewer.viewOffset.x) + (SolGame.views.systemSizeX / 2)) / SolGame.views.systemSizeX) * SolGame.views.pixiApp.renderer.width;
 		else
-			return (((pos - SolGame.MapViewer.focusMapObj.pos.y + SolGame.MapViewer.viewOffset.y) + (SolGame.views.systemSizeY / 2)) / SolGame.views.systemSizeY) * SolGame.views.pixiApp.renderer.height;
+			return (((pos - SolGame.MapViewer.focusMapObj.path.pos.y + SolGame.MapViewer.viewOffset.y) + (SolGame.views.systemSizeY / 2)) / SolGame.views.systemSizeY) * SolGame.views.pixiApp.renderer.height;
 	},
 	
 	setSpritePos: function(mapObj) {
-		mapObj.sprite.x = SolGame.MapViewer.getRenderedPosition(mapObj.pos.x, true);
-		mapObj.sprite.y = SolGame.MapViewer.getRenderedPosition(mapObj.pos.y, false);
+		mapObj.sprite.x = SolGame.MapViewer.getRenderedPosition(mapObj.path.pos.x, true);
+		mapObj.sprite.y = SolGame.MapViewer.getRenderedPosition(mapObj.path.pos.y, false);
 	},
 	
 	setTarget: function(mapObjType, mapObjId) {

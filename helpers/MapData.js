@@ -1,33 +1,25 @@
 const DataSources = require('../data/DataSources');
-const OrbitalMechanics = require('./OrbitalMechanics');
+const PathData = require('./PathData');
 
 module.exports = {
 	SOL_ID: 1, // ID of the sun in the db
 	
-	MAPOBJ_CELBODY: 'celbody',
-	MAPOBJ_STATION: 'station',
-	MAPOBJ_ANOMALY: 'anomaly',
+	MAPOBJ_CELBODY: 1,
+	MAPOBJ_STATION: 2,
+	MAPOBJ_ANOMALY: 3,
 	
-	ANOM_UNKNOWN:       'unknown',
-	ANOM_SHIP:          'ship',
-	ANOM_COMMUNICATION: 'communication', // Distress calls, regular comms
-	ANOM_EXPLOSION:     'explosion', // Weapons fire, ship destruction
-	ANOM_CARGO:         'cargo', // Items
-	
-	PATH_NONE:  'none',
-	PATH_POINT: 'point',
-	PATH_ORBIT: 'orbit',
-	PATH_CURVE: 'curve',
+	ANOM_UNKNOWN:       0,
+	ANOM_SHIP:          1,
+	ANOM_COMMUNICATION: 2, // Distress calls, regular comms
+	ANOM_EXPLOSION:     3, // Weapons fire, ship destruction
+	ANOM_CARGO:         4, // Items
 	
 	MapObj: function(type, id) {
 		this.type      = type;
 		this.id        = id;
 		this.imgUrl    = '';
 		this.active    = true;
-		this.pos       = {x: 0, y: 0};
-		this.path      = {type: module.exports.PATH_NONE, data: {}};
-		
-		this.updatePos = function(timeMs) {};
+		this.path      = new PathData.PathObj();
 	},
 	
 	SystemMap : function() {
@@ -50,7 +42,7 @@ module.exports = {
 			if(undefined != _mapObjs.find(e => e.type == mapObj.type && e.id == mapObj.id))
 				throw "Adding map obj that already exists. type " + mapObj.type + " id: " + mapObj.id;
 			
-			if(module.exports.PATH_ORBIT == mapObj.path.type) {
+			if(PathData.PATH_ORBIT == mapObj.path.type) {
 				mapObj.path.data.parentMapObj = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId);
 				
 				if(undefined == mapObj.path.data.parentMapObj)
@@ -74,7 +66,7 @@ module.exports = {
 		
 		this.updateAllPos = function(timeMs) {
 			this.forActiveMapObj(function(mapObj) {
-				mapObj.updatePos(timeMs);
+				mapObj.path.updatePos(timeMs);
 			});
 		};
 	},
@@ -97,7 +89,8 @@ module.exports = {
 			
 			mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defSol.celestial_body_id);
 			mapObj.imgUrl = defSol.img_url;
-			mapObj.path.type = module.exports.PATH_POINT; // Sun doesn't move
+			mapObj.path = new PathData.PathObj();
+			mapObj.path.type = PathData.PATH_POINT; // Sun doesn't move
 			
 			systemMap.addMapObj(mapObj);
 			
@@ -111,13 +104,12 @@ module.exports = {
 					mapObj = new module.exports.MapObj(module.exports.MAPOBJ_CELBODY, defCelBody.celestial_body_id);
 					mapObj.imgUrl = defCelBody.img_url;
 					
-					mapObj.path.type = module.exports.PATH_ORBIT;
-					mapObj.path.data.distanceFromParent = defCelBody.distance_from_parent;
-					mapObj.path.data.orbitalPeriodHours = defCelBody.distance_from_parent * 50; // TODO populate this correctly
-					mapObj.path.data.thetaOffsetDeg = 0;
-					mapObj.path.data.parentId = defCelBody.parent_body_id;
-					
-					mapObj.updatePos = module.exports.updatePosOrbit;
+					mapObj.path = new PathData.getPath(PathData.PATH_ORBIT, {
+						distanceFromParent: defCelBody.distance_from_parent,
+						orbitalPeriodHours: defCelBody.distance_from_parent * 50,
+						thetaOffsetDeg: 0,
+						parentId: defCelBody.parent_body_id
+					});
 					
 					systemMap.addMapObj(mapObj);
 				});
@@ -125,15 +117,5 @@ module.exports = {
 			
 			callback(systemMap);
 		});
-	},
-	
-	updatePosOrbit: function(timeMs) {
-		this.pos = OrbitalMechanics().getOrbitalPosition(
-			this.path.data.parentMapObj.pos,
-			this.path.data.distanceFromParent,
-			this.path.data.orbitalPeriodHours,
-			timeMs,
-			this.path.data.thetaOffsetDeg
-		);
-	},
+	}
 };

@@ -16,6 +16,7 @@ module.exports = {
 	 *     correspond to named keys expected in the object, and the values of each
 	 *     key map to an object with the following keys.
 	 *       type: ObjectValidator.DATA_INT - Required
+	 *       optional: false - Allows a field to be optional, defaults to false
 	 *       template: {} - Another valid template, used for object types and arrays containing objects
 	 *       arrType: ObjectValidator.DATA_INT - The type of elements in an array
 	 */
@@ -26,8 +27,12 @@ module.exports = {
 		var retObj = {};
 		
 		Object.keys(template).forEach(function(key) {
-			if(undefined == obj[key])
+			if(undefined == obj[key]) {
+				if(undefined != template[key].optional && template[key].optional)
+					return;
+				
 				throw "Object doesn't have key: " + key;
+			}
 			
 			if(module.exports.DATA_ANY == template[key].type) {
 				retObj[key] = obj[key];

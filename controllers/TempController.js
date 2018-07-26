@@ -22,11 +22,55 @@ var pda = require('../models/PersistentDataAccess');
 var newDataBox = require('../data/DataBox');
 var MapData = require('../helpers/MapData');
 
+var PathData = require('../helpers/PathData');
+
+var DataValidator = require('../helpers/DataValidator');
+
 module.exports = function() {
 	var module = {};
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
 		var db = newDataBox().getDataBoxServerStandard();
+		
+		var currTime = Date.now();
+		
+		var path = PathData.getPath(PathData.PATH_CURVE, {
+			pathSegs: [{
+				sCrd: {pos: {x: -10, y: 0}, mov: {x: 0, y: 0}, tMs: currTime - 10000},
+				eCrd: {pos: {x: 0, y: 0}, mov: {x: 0, y: 0}, tMs: currTime + 10000},
+				pathCtrl1: {x: 0, y: 0},
+				pathCtrl2: {x: 0, y: 0},
+				fuelBurn: 100
+			}]
+		});
+		
+		path.updatePos(currTime);
+		console.log(path.pos);
+		
+		
+		callback(output);
+		return;
+		
+		
+		
+		var inputObj = {a: '1.5', b: [1,2]};
+		
+		try {
+			output.data = DataValidator.cleanObj(inputObj, {
+				//z: {type: DataValidator.DATA_FLOAT},
+				a: {type: DataValidator.DATA_FLOAT},
+				b: {type: DataValidator.DATA_ARR, arrType: DataValidator.DATA_INT, template: {
+					c: {type: DataValidator.DATA_FLOAT}
+				}},
+				c: {type: DataValidator.DATA_INT, optional: false}
+			});
+		} catch(err) {
+			output.data = err;
+		}
+		
+		callback(output);
+		
+		return;
 		
 		MapData.buildSystemMap(db, function(systemMap) {
 			systemMap.forActiveMapObj(function(mapObj) {

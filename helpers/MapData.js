@@ -43,9 +43,9 @@ module.exports = {
 				throw "Adding map obj that already exists. type " + mapObj.type + " id: " + mapObj.id;
 			
 			if(PathData.PATH_ORBIT == mapObj.path.type) {
-				mapObj.path.data.parentMapObj = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId);
+				mapObj.path.data.parentPos = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId).path.pos;
 				
-				if(undefined == mapObj.path.data.parentMapObj)
+				if(undefined == mapObj.path.data.parentPos)
 					throw "Could not find parent. ID: " + mapObj.path.data.parentId;
 			}
 			

@@ -681,6 +681,7 @@ module.exports = {
 	 *     correspond to named keys expected in the object, and the values of each
 	 *     key map to an object with the following keys.
 	 *       type: ObjectValidator.DATA_INT - Required
+	 *       optional: false - Allows a field to be optional, defaults to false
 	 *       template: {} - Another valid template, used for object types and arrays containing objects
 	 *       arrType: ObjectValidator.DATA_INT - The type of elements in an array
 	 */
@@ -691,8 +692,12 @@ module.exports = {
 		var retObj = {};
 		
 		Object.keys(template).forEach(function(key) {
-			if(undefined == obj[key])
+			if(undefined == obj[key]) {
+				if(undefined != template[key].optional && template[key].optional)
+					return;
+				
 				throw "Object doesn't have key: " + key;
+			}
 			
 			if(module.exports.DATA_ANY == template[key].type) {
 				retObj[key] = obj[key];
@@ -816,9 +821,9 @@ module.exports = {
 				throw "Adding map obj that already exists. type " + mapObj.type + " id: " + mapObj.id;
 			
 			if(PathData.PATH_ORBIT == mapObj.path.type) {
-				mapObj.path.data.parentMapObj = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId);
+				mapObj.path.data.parentPos = _mapObjs.find(e => module.exports.MAPOBJ_CELBODY == e.type && e.id == mapObj.path.data.parentId).path.pos;
 				
-				if(undefined == mapObj.path.data.parentMapObj)
+				if(undefined == mapObj.path.data.parentPos)
 					throw "Could not find parent. ID: " + mapObj.path.data.parentId;
 			}
 			
@@ -1597,6 +1602,7 @@ module.exports = function() {
 },{"victor":22}],16:[function(require,module,exports){
 const DataValidator = require('./DataValidator');
 const OrbitalMechanics = require('./OrbitalMechanics');
+const Bezier = require('bezier-js');
 
 module.exports = {
 	PATH_NONE:  0,
@@ -1604,17 +1610,51 @@ module.exports = {
 	PATH_ORBIT: 2,
 	PATH_CURVE: 3,
 	
+	templates: function() {
+		var obj = {};
+		
+		obj.point = {
+			x: {type: DataValidator.DATA_FLOAT},
+			y: {type: DataValidator.DATA_FLOAT}
+		};
+		
+		obj.crd = {
+			pos: {type: DataValidator.DATA_OBJ, template: obj.point},
+			mov: {type: DataValidator.DATA_OBJ, template: obj.point},
+			tMs: {type: DataValidator.DATA_INT}
+		};
+		
+		obj.pathSeg = {
+			sCrd: {type: DataValidator.DATA_OBJ, template: obj.crd},
+			eCrd: {type: DataValidator.DATA_OBJ, template: obj.crd},
+			pathCtrl1: {type: DataValidator.DATA_OBJ, template: obj.point},
+			pathCtrl2: {type: DataValidator.DATA_OBJ, template: obj.point},
+			fuelBurn: {type: DataValidator.DATA_FLOAT}
+		};
+		
+		return obj;
+	},
+	
 	PathObj: function() {
 		this.type = module.exports.PATH_NONE;
 		this.pos = {x: 0, y: 0};
 		this.data = {};
 		
 		this.updatePos = function(timeMs) {};
+		
+		this.toJson = function() {
+			// TODO make it so we're able to check data with a template based on type
+			// This will be used in the getPath switch as well
+			return JSON.stringify(DataValidator.cleanObj(this, {
+				type: {type: DataValidator.DATA_INT},
+				data: {type: DataValidator.DATA_ANY}
+			}));
+		};
 	},
 	
 	getPathFromJson: function(pathJson) {
 		var tempPath = JSON.parse(pathJson);
-		return module.exports.getPath(tempPath.type, tempPath);
+		return module.exports.getPath(tempPath.type, tempPath.data);
 	},
 	
 	getPath: function(pathType, pathData) {
@@ -1642,12 +1682,40 @@ module.exports = {
 					parentId: {type: DataValidator.DATA_INT}
 				});
 				
+				// By default we orbit around the origin, but this is typically set to
+				// anoter path's pos in the MapData map construction
 				pathObj.data.parentPos = {x: 0, y: 0};
 			break;
 			
 			case module.exports.PATH_CURVE:
 				pathObj.type = module.exports.PATH_CURVE;
 				pathObj.updatePos = module.exports.updatePosCurve;
+				
+				pathObj.data = DataValidator.cleanObj(pathData, {
+					pathSegs: {
+						type: DataValidator.DATA_ARR,
+						arrType: DataValidator.DATA_OBJ,
+						template: module.exports.templates().pathSeg
+					},
+					
+//					destType: {},
+//					destData: {type: DataValidator.DATA_OBJ, template: {
+//						// TODO
+//					}},
+				});
+				
+				for(let i = 0; i < pathObj.data.pathSegs.length; i++) {
+					pathObj.data.pathSegs[i].posCurve = new Bezier(
+						pathObj.data.pathSegs[i].sCrd.pos.x,
+						pathObj.data.pathSegs[i].sCrd.pos.y,
+						pathObj.data.pathSegs[i].pathCtrl1.x,
+						pathObj.data.pathSegs[i].pathCtrl1.y,
+						pathObj.data.pathSegs[i].pathCtrl2.x,
+						pathObj.data.pathSegs[i].pathCtrl2.y,
+						pathObj.data.pathSegs[i].eCrd.pos.x,
+						pathObj.data.pathSegs[i].eCrd.pos.y
+					);
+				}
 			break;
 			
 			default:
@@ -1662,19 +1730,41 @@ module.exports = {
 	updatePosPoint: function(timeMs) {},
 	
 	updatePosOrbit: function(timeMs) {
-		this.pos = OrbitalMechanics().getOrbitalPosition(
-			this.data.parentMapObj.path.pos,
+		// TODO modify how we're getting the orbital position so that we can just update this.pos directly
+		// We don't override this.pos because it is potentially referenced by other Path objects
+		var tempPos = OrbitalMechanics().getOrbitalPosition(
+			this.data.parentPos,
 			this.data.distanceFromParent,
 			this.data.orbitalPeriodHours,
 			timeMs,
 			this.data.thetaOffsetDeg
 		);
+		
+		this.pos.x = tempPos.x;
+		this.pos.y = tempPos.y;
 	},
 	
-	updatePosCurve: function(timeMs) {},
+	updatePosCurve: function(timeMs) {
+		for(let i = 0; i < this.data.pathSegs.length; i++) {
+			if(this.data.pathSegs[i].sCrd.tMs <= timeMs && this.data.pathSegs[i].eCrd.tMs >= timeMs) {
+				var tempPos = this.data.pathSegs[i].posCurve.get(
+					(timeMs - this.data.pathSegs[i].sCrd.tMs) / (this.data.pathSegs[i].eCrd.tMs - this.data.pathSegs[i].sCrd.tMs)
+				);
+				
+				this.pos.x = tempPos.x;
+				this.pos.y = tempPos.y;
+				
+				return;
+			}
+		}
+		
+		// If we get here it means we did not find an active segment
+		// TODO emit an event to let the map know?
+		this.updatePos = module.exports.updatePosNone;
+	},
 };
 
-},{"./DataValidator":12,"./OrbitalMechanics":15}],17:[function(require,module,exports){
+},{"./DataValidator":12,"./OrbitalMechanics":15,"bezier-js":18}],17:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	

@@ -115,7 +115,23 @@ module.exports = {
 				});
 			}
 			
-			callback(systemMap);
+			dataBox.getData(DataSources.DAO_STATIONS, 0, function(defStations) {
+				defStations.forEach(function(defStation) {
+					mapObj = new module.exports.MapObj(module.exports.MAPOBJ_STATION, defStation.station_id);
+					mapObj.imgUrl = defStation.img_url;
+					
+					mapObj.path = new PathData.getPath(PathData.PATH_ORBIT, {
+						distanceFromParent: defStation.distance_from_parent,
+						orbitalPeriodHours: defStation.distance_from_parent * 50,
+						thetaOffsetDeg: 0,
+						parentId: defStation.parent_body_id
+					});
+					
+					systemMap.addMapObj(mapObj);
+					
+					callback(systemMap);
+				});
+			});
 		});
 	}
 };

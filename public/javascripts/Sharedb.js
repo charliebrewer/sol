@@ -84,6 +84,7 @@ module.exports = function() {
 const DataSources = require('./DataSources');
 
 const DefCelBodiesDaoServer = require('./ServerDaos/DefCelBodiesDaoServer');
+const DefStationsDaoServer = require('./ServerDaos/DefStationsDaoServer');
 const PlayerDaoServer = require('./ServerDaos/PlayerDaoServer');
 
 module.exports = function() {
@@ -100,13 +101,17 @@ module.exports = function() {
 			case DataSources.DAO_CEL_BODIES:
 				return DefCelBodiesDaoServer();
 			break;
+			
+			case DataSources.DAO_STATIONS:
+				return DefStationsDaoServer();
+			break;
 		}
 	};
 	
 	return module;
 };
 
-},{"./DataSources":7,"./ServerDaos/DefCelBodiesDaoServer":9,"./ServerDaos/PlayerDaoServer":10}],6:[function(require,module,exports){
+},{"./DataSources":7,"./ServerDaos/DefCelBodiesDaoServer":9,"./ServerDaos/DefStationsDaoServer":10,"./ServerDaos/PlayerDaoServer":11}],6:[function(require,module,exports){
 const DataSources = require('./DataSources');
 const DaoFactoryFactory = require('./DaoFactoryFactory');
 
@@ -370,7 +375,8 @@ module.exports = {
 	},
 	
 	DAO_PLAYER: 1,
-	DAO_CEL_BODIES: 2
+	DAO_CEL_BODIES: 2,
+	DAO_STATIONS: 3,
 };
 
 },{}],8:[function(require,module,exports){
@@ -441,6 +447,21 @@ module.exports = function() {
 	var dao = BaseDao();
 	
 	dao.getData = function(id, callback) {
+		SolGame.models.getDefinitionsData(function(defData) {
+			callback(defData.stations);
+		});
+	};
+	
+	return dao;
+};
+
+},{"../BaseDao":2}],11:[function(require,module,exports){
+const BaseDao = require('../BaseDao');
+
+module.exports = function() {
+	var dao = BaseDao();
+	
+	dao.getData = function(id, callback) {
 		SolGame.models.getPlayerData(function(playerData) {
 			callback(playerData.playerRecord);
 		});
@@ -449,7 +470,7 @@ module.exports = function() {
 	return dao;
 };
 
-},{"../BaseDao":2}],11:[function(require,module,exports){
+},{"../BaseDao":2}],12:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	
@@ -662,7 +683,7 @@ module.exports = function() {
 	return module;
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 module.exports = {
 	DATA_ANY:   0,
 	DATA_BOOL:  1,
@@ -775,7 +796,7 @@ module.exports = {
 	},
 };
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 const DataSources = require('../data/DataSources');
 const PathData = require('./PathData');
 
@@ -893,12 +914,28 @@ module.exports = {
 				});
 			}
 			
-			callback(systemMap);
+			dataBox.getData(DataSources.DAO_STATIONS, 0, function(defStations) {
+				defStations.forEach(function(defStation) {
+					mapObj = new module.exports.MapObj(module.exports.MAPOBJ_STATION, defStation.station_id);
+					mapObj.imgUrl = defStation.img_url;
+					
+					mapObj.path = new PathData.getPath(PathData.PATH_ORBIT, {
+						distanceFromParent: defStation.distance_from_parent,
+						orbitalPeriodHours: defStation.distance_from_parent * 50,
+						thetaOffsetDeg: 0,
+						parentId: defStation.parent_body_id
+					});
+					
+					systemMap.addMapObj(mapObj);
+					
+					callback(systemMap);
+				});
+			});
 		});
 	}
 };
 
-},{"../data/DataSources":7,"./PathData":16}],14:[function(require,module,exports){
+},{"../data/DataSources":7,"./PathData":17}],15:[function(require,module,exports){
 var OrbitalMechanics = require('./OrbitalMechanics');
 var Bezier = require('bezier-js');
 var Victor = require('victor');
@@ -1349,7 +1386,7 @@ module.exports = function() {
 
 
 
-},{"./OrbitalMechanics":15,"bezier-js":18,"victor":22}],15:[function(require,module,exports){
+},{"./OrbitalMechanics":16,"bezier-js":19,"victor":23}],16:[function(require,module,exports){
 var Victor = require('victor');
 
 module.exports = function() {
@@ -1599,7 +1636,7 @@ module.exports = function() {
 	return module;
 };
 
-},{"victor":22}],16:[function(require,module,exports){
+},{"victor":23}],17:[function(require,module,exports){
 const DataValidator = require('./DataValidator');
 const OrbitalMechanics = require('./OrbitalMechanics');
 const Bezier = require('bezier-js');
@@ -1764,7 +1801,7 @@ module.exports = {
 	},
 };
 
-},{"./DataValidator":12,"./OrbitalMechanics":15,"bezier-js":18}],17:[function(require,module,exports){
+},{"./DataValidator":13,"./OrbitalMechanics":16,"bezier-js":19}],18:[function(require,module,exports){
 module.exports = function() {
 	var module = {};
 	
@@ -1888,10 +1925,10 @@ module.exports = function() {
 	return module;
 };
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 module.exports = require('./lib/bezier');
 
-},{"./lib/bezier":19}],19:[function(require,module,exports){
+},{"./lib/bezier":20}],20:[function(require,module,exports){
 /**
   A javascript Bezier curve library by Pomax.
 
@@ -2741,7 +2778,7 @@ module.exports = require('./lib/bezier');
 
 }());
 
-},{"./poly-bezier.js":20,"./utils.js":21}],20:[function(require,module,exports){
+},{"./poly-bezier.js":21,"./utils.js":22}],21:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -2799,7 +2836,7 @@ module.exports = require('./lib/bezier');
   module.exports = PolyBezier;
 }());
 
-},{"./utils.js":21}],21:[function(require,module,exports){
+},{"./utils.js":22}],22:[function(require,module,exports){
 (function() {
   "use strict";
 
@@ -3349,7 +3386,7 @@ module.exports = require('./lib/bezier');
   module.exports = utils;
 }());
 
-},{"./bezier":19}],22:[function(require,module,exports){
+},{"./bezier":20}],23:[function(require,module,exports){
 exports = module.exports = Victor;
 
 /**
@@ -4675,7 +4712,7 @@ function degrees2radian (deg) {
 	return deg / degrees;
 }
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 const victor = require('victor');
 
 const bm = require('../../helpers/BucketMechanics');
@@ -4696,4 +4733,4 @@ SolGame.Shared = {
 	MapData : md
 };
 
-},{"../../data/DataBox":6,"../../helpers/BucketMechanics":11,"../../helpers/MapData":13,"../../helpers/NavigationMechanics":14,"../../helpers/OrbitalMechanics":15,"../../helpers/QuestMechanics":17,"victor":22}]},{},[23]);
+},{"../../data/DataBox":6,"../../helpers/BucketMechanics":12,"../../helpers/MapData":14,"../../helpers/NavigationMechanics":15,"../../helpers/OrbitalMechanics":16,"../../helpers/QuestMechanics":18,"victor":23}]},{},[24]);

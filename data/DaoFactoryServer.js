@@ -1,6 +1,7 @@
 const DataSources = require('./DataSources');
 
 const DefCelBodiesDaoServer = require('./ServerDaos/DefCelBodiesDaoServer');
+const DefStationsDaoServer = require('./ServerDaos/DefStationsDaoServer');
 const PlayerDaoServer = require('./ServerDaos/PlayerDaoServer');
 
 module.exports = function() {
@@ -16,6 +17,10 @@ module.exports = function() {
 			
 			case DataSources.DAO_CEL_BODIES:
 				return DefCelBodiesDaoServer();
+			break;
+			
+			case DataSources.DAO_STATIONS:
+				return DefStationsDaoServer();
 			break;
 		}
 	};

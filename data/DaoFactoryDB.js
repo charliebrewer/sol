@@ -3,6 +3,7 @@ const DataSources = require('./DataSources');
 const BaseDao = require('./BaseDao');
 
 const DefCelBodiesDaoDB = require('./DBDaos/DefCelBodiesDaoDB');
+const DefStationsDaoDB = require('./DBDaos/DefStationsDaoDB');
 const PlayerDaoDB = require('./DBDaos/PlayerDaoDB');
 
 module.exports = function() {
@@ -18,6 +19,10 @@ module.exports = function() {
 			
 			case DataSources.DAO_CEL_BODIES:
 				return DefCelBodiesDaoDB();
+			break;
+			
+			case DataSources.DAO_STATIONS:
+				return DefStationsDaoDB();
 			break;
 			
 			default:

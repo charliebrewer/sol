@@ -46,4 +46,5 @@ module.exports = {
 	DAO_PLAYER: 1,
 	DAO_CEL_BODIES: 2,
 	DAO_STATIONS: 3,
+	DAO_PLR_SHIP: 4,
 };

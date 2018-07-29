@@ -4,6 +4,7 @@ const BaseDao = require('./BaseDao');
 
 const DefCelBodiesDaoDB = require('./DBDaos/DefCelBodiesDaoDB');
 const DefStationsDaoDB = require('./DBDaos/DefStationsDaoDB');
+const PlrShipDaoDB = require('./DBDaos/PlrShipDaoDB');
 const PlayerDaoDB = require('./DBDaos/PlayerDaoDB');
 
 module.exports = function() {
@@ -23,6 +24,10 @@ module.exports = function() {
 			
 			case DataSources.DAO_STATIONS:
 				return DefStationsDaoDB();
+			break;
+			
+			case DataSources.DAO_PLR_SHIP:
+				return PlrShipDaoDB();
 			break;
 			
 			default:

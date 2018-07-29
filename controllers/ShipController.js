@@ -1,15 +1,19 @@
-var DefShipsDAO = require('../models/DefShipsDAO');
-var DefShipModulesDAO = require('../models/DefShipModulesDAO');
-var PlayerDAO = require('../models/PlayerDAO');
-var PlayerShipsDAO = require('../models/PlayerShipsDAO');
+const Logger = require('../helpers/Logger');
+const DataValidator = require('../helpers/DataValidator');
 
-var ShopUtil = require('../utils/ShopUtil');
+const DefShipsDAO = require('../models/DefShipsDAO');
+const DefShipModulesDAO = require('../models/DefShipModulesDAO');
+const PlayerDAO = require('../models/PlayerDAO');
+const PlayerShipsDAO = require('../models/PlayerShipsDAO');
 
-var BucketMechanics = require('../helpers/BucketMechanics');
-var NavigationMechanics = require('../helpers/NavigationMechanics');
-var ShipMechanics = require('../helpers/ShipMechanics');
+const DataSources = require('../data/DataSources');
+const DataBox = require('../data/DataBox'); // TODO remove
 
-var Logger = require('../helpers/Logger');
+const ShopUtil = require('../utils/ShopUtil');
+
+const BucketMechanics = require('../helpers/BucketMechanics');
+const NavigationMechanics = require('../helpers/NavigationMechanics');
+const ShipMechanics = require('../helpers/ShipMechanics');
 
 module.exports = function() {
 	var module = {};
@@ -251,6 +255,43 @@ module.exports = function() {
 				});
 			});
 		});
+	};
+	
+	/**
+	 * Used to both get info about the player's ship as well as info about other ships.
+	 */
+	module.getShipInfo = function(dataBox, input, output, callback) {
+dataBox = DataBox().getDataBoxServerStandard(); // TODO remove
+		input = DataValidator.cleanObj(input, {
+			plrShipId: {type: DataValidator.DATA_INT}
+		});
+		
+		output.data = {failed: true, plrShip: {}, anomaly: {}};
+		
+		// Check if this is the ship the player is on
+		dataBox.getData(DataSources.DAO_PLR_SHIP, input.plrShipId, function(plrShip) {
+			if(undefined == plrShip) {
+				output.messages.push('no ship found');
+				callback(output);
+				return;
+			}
+			
+			output.data.failed = false;
+			output.data.plrShip = plrShip;
+			
+			if(plrShip.loc_type != NavigationMechanics().LOCATION_TYPE_ROUTE) {
+				callback(output);
+			} else {
+				dataBox.getData(DataSources.DAO_ANOMALIES, plrShip.loc_id, function(anomaly) {
+					output.data.anomaly = anomaly;
+					
+					callback(output);
+				});
+			}
+		});
+		
+		// Check if the player has permission to view all info TODO day 2
+		// Check if the ship is within range of the player
 	};
 	
 	return module;

@@ -134,7 +134,7 @@ module.exports = function() {
 			function(rows) {
 				if(rows.length != 1) {
 					Logger().log(Logger().NORMAL, (sprintf("Didn't get one row for: %s %s %s", tableName, keyName, keyValue)));
-					callback({});
+					callback(null);
 				} else {
 					callback(rows.pop());
 				}

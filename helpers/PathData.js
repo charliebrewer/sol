@@ -8,6 +8,11 @@ module.exports = {
 	PATH_ORBIT: 2,
 	PATH_CURVE: 3,
 	
+	LOC_TYPE_UNKNOWN: 0,
+	LOC_TYPE_STATION: 1,
+	LOC_TYPE_ROUTE:   2,
+	LOC_TYPE_DOCKING: 3,
+	
 	templates: function() {
 		var obj = {};
 		
@@ -22,12 +27,44 @@ module.exports = {
 			tMs: {type: DataValidator.DATA_INT}
 		};
 		
+		obj.orbit = {
+			distanceFromParent: {type: DataValidator.DATA_INT},
+			orbitalPeriodHours: {type: DataValidator.DATA_INT},
+			thetaOffsetDeg: {type: DataValidator.DATA_FLOAT},
+			parentId: {type: DataValidator.DATA_INT}
+		};
+		
 		obj.pathSeg = {
 			sCrd: {type: DataValidator.DATA_OBJ, template: obj.crd},
 			eCrd: {type: DataValidator.DATA_OBJ, template: obj.crd},
 			pathCtrl1: {type: DataValidator.DATA_OBJ, template: obj.point},
 			pathCtrl2: {type: DataValidator.DATA_OBJ, template: obj.point},
 			fuelBurn: {type: DataValidator.DATA_FLOAT}
+		};
+		
+		obj.path = {
+			pathSegs: {type: DataValidator.DATA_ARR, arrType: DataValidator.DATA_OBJ, template: obj.pathSeg},
+			dest: {type: DataValidator.DATA_OBJ, template: {
+				loc_type: {type: DataValidator.DATA_INT},
+				loc_id: {type: DataValidator.DATA_INT}
+			}}
+		};
+		
+		obj.destNone = obj.destStation = {
+			loc_type: {type: DataValidator.DATA_INT},
+			loc_id: {type: DataValidator.DATA_INT}
+		};
+		
+		obj.destOrbit = {
+			loc_type: {type: DataValidator.DATA_INT},
+			loc_id: {type: DataValidator.DATA_INT},
+			data: {type: DataValidator.DATA_OBJ, template: obj.orbit}
+		};
+		
+		obj.destPath = {
+			loc_type: {type: DataValidator.DATA_INT},
+			loc_id: {type: DataValidator.DATA_INT},
+			data: {type: DataValidator.DATA_OBJ, template: obj.path}
 		};
 		
 		return obj;
@@ -73,12 +110,7 @@ module.exports = {
 				pathObj.type = module.exports.PATH_ORBIT;
 				pathObj.updatePos = module.exports.updatePosOrbit;
 				
-				pathObj.data = DataValidator.cleanObj(pathData, {
-					distanceFromParent: {type: DataValidator.DATA_INT},
-					orbitalPeriodHours: {type: DataValidator.DATA_INT},
-					thetaOffsetDeg: {type: DataValidator.DATA_FLOAT},
-					parentId: {type: DataValidator.DATA_INT}
-				});
+				pathObj.data = DataValidator.cleanObj(pathData, module.exports.templates().orbit);
 				
 				// By default we orbit around the origin, but this is typically set to
 				// anoter path's pos in the MapData map construction

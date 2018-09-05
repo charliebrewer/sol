@@ -32,23 +32,16 @@ CREATE TABLE plr_players (
 	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0
 );
 
-CREATE TABLE plr_routes (
-	route_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-	plr_id INT UNSIGNED NOT NULL,
-	plr_ship_id INT UNSIGNED NOT NULL DEFAULT 0,
-	destination_type SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	destination_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
-	min_x BIGINT SIGNED NOT NULL DEFAULT 0,
-	max_x BIGINT SIGNED NOT NULL DEFAULT 0,
-	min_y BIGINT SIGNED NOT NULL DEFAULT 0,
-	max_y BIGINT SIGNED NOT NULL DEFAULT 0,
+CREATE TABLE plr_paths (
+	path_id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	plr_id INT UNSIGNED NOT NULL, -- "captain" of this path
+	ship_ids_on_path VARCHAR(4096) NOT NULL, -- comma separated list of plr_ship_ids
 	time_end INT UNSIGNED NOT NULL DEFAULT 0,
-	route_data VARCHAR(4096) NOT NULL,
+	path_data VARCHAR(4096) NOT NULL, -- formerly route_data
 	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	INDEX USING BTREE (plr_id),
 	INDEX USING BTREE (time_end),
 	CONSTRAINT FK_plr_id FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id)
-	-- TODO add a fk for plr ships
 );
 
 plr_generic_items -- this table will get very large, need to recycle records
@@ -66,14 +59,16 @@ CREATE TABLE plr_ships (
 	def_ship_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	loadout VARCHAR(1000) NOT NULL,
 	cargo VARCHAR(1000) NOT NULL,
-	location_type INT UNSIGNED NOT NULL DEFAULT 0,
-	location_id INT UNSIGNED NOT NULL DEFAULT 0,
-	is_active INT UNSIGNED NOT NULL DEFAULT 0,
+	loc_type INT UNSIGNED NOT NULL DEFAULT 0,
+	loc_id INT UNSIGNED NOT NULL DEFAULT 0,
+	dest_station_id SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	is_active TINYINT UNSIGNED NOT NULL DEFAULT 0,
+	passengers VARCHAR(1000) NOT NULL DEFAULT '', -- JSON passenger data
 	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
 	INDEX USING BTREE (plr_id),
 	FOREIGN KEY (plr_id) REFERENCES plr_players(plr_id),
 	FOREIGN KEY (def_ship_id) REFERENCES def_ships(ship_id),
-	CONSTRAINT plr_ship UNIQUE (plr_id, def_ship_id)
+	FOREIGN KEY (dest_station_id) REFERENCES def_stations(station_id)
 );
 
 unique key plr_id def_ship_id
@@ -262,12 +257,12 @@ cfg_laws
 ---- Other Data
 ----------------------------------------------------------------
 
--- incomplete
-CREATE TABLE `map_obj_data` (
-	`map_obj_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-	`img_url` varchar(100) NOT NULL,
-	`time_end` int(10) unsigned NOT NULL DEFAULT '0',
-	`path_data` varchar(4096) NOT NULL,
-	`flags` smallint(5) unsigned NOT NULL DEFAULT '0',
-	PRIMARY KEY (`map_obj_id`),
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE anomalies (
+	id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+	type SMALLINT UNSIGNED NOT NULL,
+	data VARCHAR(4096) NOT NULL,
+	path_data VARCHAR(4096) NOT NULL,
+	time_end_sc INT UNSIGNED NOT NULL DEFAULT 0,
+	flags SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+	INDEX USING BTREE (time_end_sc)
+);

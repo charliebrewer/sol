@@ -9,6 +9,11 @@ Naming Conventions
 Coordinates are abbreviated "crd".
 Tables in the database that hold player data and are modified at run time start with plr_.
 Tables in the database that contain definitions data and do not change start with def_.
+The primary key in each table should be "id", previously this was "<table_name>_id" but no longer
+
+Abbreviations
+- Location: loc
+- Destination: dest
 
 ----------------------------------------------------------------
 

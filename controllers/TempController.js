@@ -20,6 +20,7 @@ var BucketMechanics = require('../helpers/BucketMechanics');
 var pda = require('../models/PersistentDataAccess');
 
 var newDataBox = require('../data/DataBox');
+const DataSources = require('../data/DataSources');
 var MapData = require('../helpers/MapData');
 
 var PathData = require('../helpers/PathData');
@@ -31,6 +32,18 @@ module.exports = function() {
 
 	module.runTempFunction = function(dataBox, input, output, callback) {
 		var db = newDataBox().getDataBoxServerStandard();
+		
+		//ShipController().getShipInfo(dataBox, {plrShipId: 1}, output, callback);
+		
+		//return;
+		
+		
+		db.getData(DataSources.DAO_ANOMALY, 1, function(asdf) {
+			output.data = asdf;
+			callback(output);
+		});
+		
+		return;
 		
 		var currTime = Date.now();
 		

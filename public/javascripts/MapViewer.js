@@ -62,7 +62,7 @@ SolGame.MapViewer = SolGame.MapViewer || {
 	
 	// Function passed to ticker
 	draw: function(delta) {
-		SolGame.MapViewer.systemMap.updateAllPos(Date.now());
+		SolGame.MapViewer.systemMap.updateAllPos(Date.now() * 2);
 		SolGame.MapViewer.systemMap.forActiveMapObj(SolGame.MapViewer.setSpritePos);
 	},
 };

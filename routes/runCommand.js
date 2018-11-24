@@ -10,12 +10,6 @@ var DataBox = require('../helpers/DataBox');
 var RESPONSE_SUCCESS = 0;
 var RESPONSE_FAILURE = 1;
 
-// TODO remove
-function login(data) {
-	console.log("tryin to log in");
-	console.log(data);
-}
-
 router.post('/', function(req, res, next) {
 	var output = {"responseCode" : RESPONSE_FAILURE, "messages" : [], "data" : {}};
 

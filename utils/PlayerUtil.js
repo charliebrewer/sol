@@ -3,6 +3,8 @@ var PlayerRoutesDAO = require('../models/PlayerRoutesDAO');
 
 var NavigationMechanics = require('../helpers/NavigationMechanics');
 
+const DataSources = require('../data/DataSources');
+
 module.exports = function() {
 	var module = {};
 	
@@ -69,6 +71,26 @@ module.exports = function() {
 				}
 			});
 		});
+	};
+	
+	/*
+	Gets all information about a player
+	their location info, their criminal status, their money etc
+	if they're on a ship, the info about the ship they're on and the route they're on
+	*/
+	module.getPlayerInfo = function(dataBox, callback) {
+		//
+	};
+	
+	module.getPlayerState = function(dataBox, plrId, callback) {
+		dataBox.getData(DataSources.DAO_PLAYER, plrId, function(plrData) {
+		dataBox.getData(DataSources.DAO_PLAYER, plrId, function(plrData) {
+		dataBox.getData(DataSources.DAO_PLAYER, plrId, function(plrData) {
+			callback({
+				locType: plrData.loc_type,
+				locId: plrData.loc_id,
+			});
+		}); }); });
 	};
 	
 	return module;

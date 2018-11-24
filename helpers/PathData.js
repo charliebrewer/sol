@@ -3,10 +3,14 @@ const OrbitalMechanics = require('./OrbitalMechanics');
 const Bezier = require('bezier-js');
 
 module.exports = {
-	PATH_NONE:  0,
+	PATH_NONE:  0, // TODO remove
 	PATH_POINT: 1,
 	PATH_ORBIT: 2,
 	PATH_CURVE: 3,
+	
+	PATH_SEG_NONE:  0,
+	PATH_SEG_ORBIT: 1,
+	PATH_SEG_CURVE: 2,
 	
 	LOC_TYPE_UNKNOWN: 0,
 	LOC_TYPE_STATION: 1,
@@ -71,11 +75,40 @@ module.exports = {
 	},
 	
 	PathObj: function() {
-		this.type = module.exports.PATH_NONE;
+		//this.type = module.exports.PATH_NONE;
 		this.pos = {x: 0, y: 0};
 		this.data = {};
+		this.pathSegs = [];
 		
-		this.updatePos = function(timeMs) {};
+		this.updatePos = function(timeMs) {
+			var i = this.getActiveSegIndex(timeMs);
+			if(-1 == i)
+				return false;
+			
+			switch(this.pathSegs[i].type) {
+				case module.exports.PATH_SEG_ORBIT:
+					module.exports.updatePosOrbit(this.pathSegs[i], this.pos);
+					break;
+					
+				case module.exports.PATH_SEG_CURVE:
+					module.exports.updatePosCurve(this.pathSegs[i], this.pos);
+					break;
+					
+				default:
+					throw "Unhandled path seg type: " + this.pathSegs[i].type;
+			}
+			
+			return true;
+		};
+		
+		this.getActiveSegIndex = function(timeMs) {
+			for(let i = 0; i < this.pathSegs.length; i++) {
+				if(this.pathSegs[i].sCrd.tMs < timeMs && this.pathSegs[i].eCrd.tMs > timeMs)
+					return i;
+			}
+			
+			return -1;
+		};
 		
 		this.toJson = function() {
 			// TODO make it so we're able to check data with a template based on type
@@ -87,12 +120,16 @@ module.exports = {
 		};
 	},
 	
-	getPathFromJson: function(pathJson) {
-		var tempPath = JSON.parse(pathJson);
-		return module.exports.getPath(tempPath.type, tempPath.data);
+	PathSeg: function() {
+		this.type = 0; // TODO create seg types, reuse old types?
+		this.sCrd = {tMs: 0, pos: {x: 0, y: 0}, mov: {x: 0, y: 0}};
+		this.eCrd = Object.assign({}, this.sCrd);
+		this.data = {};
 	},
 	
-	getPath: function(pathType, pathData) {
+	getPathObj: function(pathData) {},
+	
+	getPathSeg: function(pathType, pathData) {
 		var pathObj = new module.exports.PathObj();
 		
 		switch(DataValidator.cleanData(pathType, DataValidator.DATA_INT)) {
@@ -113,7 +150,7 @@ module.exports = {
 				pathObj.data = DataValidator.cleanObj(pathData, module.exports.templates().orbit);
 				
 				// By default we orbit around the origin, but this is typically set to
-				// anoter path's pos in the MapData map construction
+				// another path's pos in the MapData map construction
 				pathObj.data.parentPos = {x: 0, y: 0};
 			break;
 			

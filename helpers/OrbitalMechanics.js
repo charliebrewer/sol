@@ -244,5 +244,13 @@ module.exports = function() {
 		return Math.sqrt((2 * module.GRAVITATIONAL_CONSTANT * parentMass) / distanceFromParent);
 	};
 	
+	module.updatePathSegOrbit = function(pathSeg, timeMs) {
+		pathSeg.data.e * 17; // etc
+		pathSeg.pos.x = 1;
+		pathSeg.pos.y = 1;
+		
+		return true;
+	};
+	
 	return module;
 };

@@ -12,7 +12,7 @@ module.exports = function() {
 	};
 	
 	dao.getData = function(id, callback) {
-		PersistentDataAccess().getData(dao.params, id, callback);
+		PersistentDataAccess().getData(dao.params, 0, callback);
 	};
 	
 	return dao;

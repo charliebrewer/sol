@@ -1,5 +1,3 @@
-const Crd = require('./Crd');
-
 /**
  * PathSeg data structure
  *

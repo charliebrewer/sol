@@ -9,7 +9,7 @@ module.exports = {
 		
 		return {
 			pcb: {type: DataValidator.DATA_INT},
-			tMs: {type: DataValidator.DATA_INT},
+			tms: {type: DataValidator.DATA_INT},
 			pos: {type: DataValidator.DATA_OBJ, template: vec},
 			mov: {type: DataValidator.DATA_OBJ, template: vec}
 		};
@@ -17,15 +17,16 @@ module.exports = {
 	
 	Crd: function() {
 		this.pcb = 0; // Parent celestial body
-		this.tMs = 0;
+		this.tms = 0; // Time milliseconds
 		this.pos = {x: 0, y: 0};
 		this.mov = {x: 0, y: 0};
 		
+		// TODO convert to prototype function
 		this.copy = function(other) {
 			other = DataValidator.cleanObj(other, module.exports.getTemplate());
 			
 			this.pcb = other.pcb;
-			this.tMs = other.tms;
+			this.tms = other.tms;
 			this.pos.x = other.pos.x;
 			this.pos.y = other.pos.y;
 			this.mov.x = other.mov.x;
@@ -47,7 +48,7 @@ module.exports = {
 			if(this.pcb != other.pcb)
 				return false;
 			
-			if(this.tMs != other.tMs)
+			if(this.tms != other.tms)
 				return false;
 			
 			if(this.pos.x != other.pos.x)

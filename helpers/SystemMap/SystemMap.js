@@ -1,3 +1,5 @@
+const Crd = require('./Crd');
+
 module.exports = {
 	SystemMap: function() {
 		var _mapObjs = [];
@@ -58,6 +60,27 @@ module.exports = {
 			this.forActiveMapObj(function(mapObj) {
 				mapObj.path.updatePos(timeMs);
 			});
+		};
+		
+		this.activateAll = function() {
+			this.forAllMapObj(function(mapObj) {
+				mapObj.active = true;
+			});
+		};
+		
+		/**
+		 * Takes a coordinate and translates it to the corresponding coordinate based
+		 * on a different parent celestial body ID. Creates a new coordinate to return.
+		 */
+		this.translateCrd = function(crd, pcb) {
+			if(crd.pcb == pcb)
+				return new Crd.Crd().copy(crd);
+			
+			this.updateAllPos(crd.tms);
+			
+			// TODO
+			
+			return new Crd.Crd();
 		};
 	}
 };

@@ -65,5 +65,9 @@ module.exports = {
 			
 			return true;
 		};
+		
+		this.toJSON = function() {
+			return DataValidator.cleanObj(this, module.exports.getTemplate());
+		};
 	}
 };
